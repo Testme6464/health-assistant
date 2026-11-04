@@ -752,11 +752,15 @@ async function aiChatRaw(systemPrompt, userPrompt, onRetry) {
     let base = (s.customBase || '').trim().replace(/\/+$/, '');
     // tolerate the full endpoint pasted by the user — don't double the path
     if (!/\/chat\/completions$/.test(base)) base += '/chat/completions';
+    const modelName = (s.customModel || '').trim() || 'openai/gpt-oss-20b';
+    // Groq's qwen preview model caps output at 1000 tokens/min — request within it.
+    const body = { model: modelName,
+      messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }] };
+    if (/qwen/i.test(modelName)) body.max_tokens = 1000;
     const j = await fetchWithRetry(base, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + s.customKey },
-      body: JSON.stringify({ model: (s.customModel || '').trim() || 'openai/gpt-oss-20b',
-        messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }] })
+      body: JSON.stringify(body)
     }, 3, onRetry);
     return j.choices[0].message.content;
   }
@@ -1425,11 +1429,13 @@ const userPrompt =
 'Current medications: ' + (meds.map(m => m.name + (m.dosage ? ' ' + m.dosage : '') + (m.reason ? ' (' + m.reason + ')' : '')).join('; ') || 'none') + '\n' +
 'Daily calorie target: ' + calorieTarget(p) + ' kcal\n' +
 'Usual bedtime: ' + (DB.reminders.bedtime || '?');
-let ans = await aiChat(PLAN_PROMPT, userPrompt, onRetry);
+const isQwenPlan = /qwen/i.test(DB.settings.customModel || '');
+const planPrompt = PLAN_PROMPT + (isQwenPlan ? ' Keep the entire plan concise: under ~450 words total.' : '');
+let ans = await aiChat(planPrompt, userPrompt, onRetry);
 if (!planOutputOk(ans)) {
   // One strict retry; then keep whichever version is better — never fail outright
   // over minor format slips (a weak free model may still mix in some English).
-  const retry = await aiChat(PLAN_PROMPT + '\nSTRICT: all words Burmese except units kcal/kg/cm/min; use the 5 headers exactly; no questions.', userPrompt, onRetry);
+  const retry = await aiChat(planPrompt + '\nSTRICT: all words Burmese except units kcal/kg/cm/min; use the 5 headers exactly; no questions.', userPrompt, onRetry);
   if (planOutputOk(retry)) ans = retry;
   else if (planHeaderHits(retry) > planHeaderHits(ans)) ans = retry;
 }
