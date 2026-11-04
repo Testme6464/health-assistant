@@ -189,6 +189,13 @@ function geminiModelName() {
 async function fetchWithRetry(url, opts, tries, onRetry) {
   tries = tries || 3;
   const TIMEOUT_MS = 25000;
+  const sleep = (ms) => new Promise(res => setTimeout(res, ms));
+  // If the API tells us how long to wait ("Retry after 7s"), honor it (capped at 90s).
+  const retryDelayMs = (msg, attempt) => {
+    const m = /retry after (\d+)\s*s/i.exec(msg || '');
+    if (m) return Math.min(parseInt(m[1], 10), 90) * 1000;
+    return (attempt + 1) * 4000;
+  };
   let lastErr = new Error('AI ခေါ်ဆို၍မရပါ');
   for (let i = 0; i < tries; i++) {
     const ctrl = new AbortController();
@@ -198,12 +205,16 @@ async function fetchWithRetry(url, opts, tries, onRetry) {
       clearTimeout(timer);
       let j = {};
       try { j = await r.json(); } catch (e) { /* non-JSON body */ }
-      if (r.ok) return j;
-      const msg = (j.error && j.error.message) || ('HTTP ' + r.status);
+      // Some free APIs (e.g. Pollinations) return HTTP 200 with an error object on rate limits.
+      const bodyErr = j && j.error ? (j.error.message || j.error) : null;
+      if (r.ok && !bodyErr) return j;
+      const msg = (typeof bodyErr === 'string' ? bodyErr : (bodyErr ? JSON.stringify(bodyErr) : null)) || ('HTTP ' + r.status);
       lastErr = new Error(msg);
-      if ((r.status === 503 || r.status === 429) && i < tries - 1) {
+      const looksRateLimit = /rate|limit|too many|45 seconds|overloaded|high demand/i.test(msg);
+      const retryableStatus = (r.status === 429 || r.status === 503) || (r.ok && looksRateLimit);
+      if (i < tries - 1 && retryableStatus) {
         if (onRetry) onRetry(i + 2, tries);
-        await new Promise(res => setTimeout(res, (i + 1) * 4000));
+        await sleep(retryDelayMs(msg, i));
         continue;
       }
       throw lastErr;
@@ -214,7 +225,7 @@ async function fetchWithRetry(url, opts, tries, onRetry) {
       const retryable = (e instanceof TypeError) || (e && e.name === 'AbortError');
       if (i < tries - 1 && retryable) {
         if (onRetry) onRetry(i + 2, tries);
-        await new Promise(res => setTimeout(res, (i + 1) * 4000));
+        await sleep(retryDelayMs(e.message, i));
         continue;
       }
       throw e;
