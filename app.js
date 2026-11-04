@@ -65,7 +65,7 @@ function defaultDB() {
     plans: {},           // profileId -> {month,createdAt,ai,meals,sleep,workout,diet,tip,rawAi}
     reminders: { waterEnabled: true, waterInterval: 120, waterStart: '08:00', waterEnd: '21:00',
                  medEnabled: true, sleepEnabled: true, bedtime: '22:30' },
-    settings: { geminiKey: '', openaiKey: '', claudeKey: '', googleClientId: '',
+    settings: { geminiKey: '', geminiModel: 'gemini-3.8-flash', openaiKey: '', claudeKey: '', googleClientId: '',
                 googleUser: null, calorieTargetMode: 'auto', calorieTarget: 2000, waterTargetMl: 2000 }
   };
 }
@@ -173,11 +173,16 @@ function aiProvider() {
   if (s.claudeKey) return 'claude';
   return null;
 }
+// User-chosen Gemini model; falls back to gemini-3.8-flash for old saved settings.
+function geminiModelName() {
+  const m = (DB.settings && DB.settings.geminiModel || '').trim();
+  return m || 'gemini-3.8-flash';
+}
 async function aiChat(systemPrompt, userPrompt) {
   const s = DB.settings, prov = aiProvider();
   if (!prov) throw new Error('API key မရှိပါ');
   if (prov === 'gemini') {
-    const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=' + encodeURIComponent(s.geminiKey), {
+    const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + geminiModelName() + ':generateContent?key=' + encodeURIComponent(s.geminiKey), {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ system_instruction: { parts: [{ text: systemPrompt }] },
         contents: [{ parts: [{ text: userPrompt }] }] })
@@ -218,7 +223,7 @@ async function geminiFoodVision(dataUrl) {
   const prompt = 'Analyze this food photo. Identify each visible food item and estimate calories ' +
     'for a typical serving. Reply ONLY with JSON: {"items":[{"name":"<Burmese name>","kcal":<number>}],"totalKcal":<number>}. ' +
     'Use Burmese (Myanmar script) for names. If no food is visible, return {"items":[],"totalKcal":0}.';
-  const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=' + encodeURIComponent(s.geminiKey), {
+  const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + geminiModelName() + ':generateContent?key=' + encodeURIComponent(s.geminiKey), {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ contents: [{ parts: [{ text: prompt },
       { inline_data: { mime_type: m[1], data: m[2] } }] }] })
@@ -1429,10 +1434,14 @@ function renderSettings() {
   let html = '<div class="card"><h3>🤖 ကိုယ်ပိုင် AI API Keys (BYOK)</h3>' +
     '<div class="small muted mb">Key တွေကို ဒီဖုန်း/စက်ထဲမှာပဲ သိမ်းထားပါတယ် — server ကို မပို့ပါ။ AI လုပ်ဆောင်ချက်များ: ဆေးဓာတ်ပြုမှု စစ်ဆေးခြင်း၊ အစီအစဉ် ထုတ်လုပ်ခြင်း၊ ပုံမှ အစားအစာ ဆန်းစစ်ခြင်း၊ AI အကြံပြုချက်။</div>' +
     '<label>Gemini API Key</label><input id="setGemini" type="password" value="' + esc(s.geminiKey) + '" placeholder="AIza…">' +
+    '<label>Gemini Model</label><input id="setGeminiModel" list="geminiModelList" value="' + esc(geminiModelName()) + '" placeholder="gemini-3.8-flash">' +
+    '<datalist id="geminiModelList"><option value="gemini-3.8-flash"></option><option value="gemini-2.5-flash"></option>' +
+    '<option value="gemini-2.5-pro"></option><option value="gemini-2.0-flash"></option></datalist>' +
+    '<div class="small muted mb">ကြိုက်တဲ့ model နာမည်ကို ရွေးချယ်နိုင် / ကိုယ်တိုင် ရိုက်ထည့်နိုင်ပါတယ်</div>' +
     '<label>OpenAI API Key</label><input id="setOpenai" type="password" value="' + esc(s.openaiKey) + '" placeholder="sk-…">' +
     '<label>Claude API Key</label><input id="setClaude" type="password" value="' + esc(s.claudeKey) + '" placeholder="sk-ant-…">' +
     '<div class="mt"><button class="btn block" id="btnSaveKeys">💾 Keys များ သိမ်းမယ်</button></div>' +
-    '<div class="small muted mt">လက်ရှိ AI: <b>' + ({ gemini: 'Gemini', openai: 'OpenAI', claude: 'Claude' }[aiProvider()] || 'မရှိပါ (offline mode)') + '</b></div></div>';
+    '<div class="small muted mt">လက်ရှိ AI: <b>' + ({ gemini: 'Gemini (' + esc(geminiModelName()) + ')', openai: 'OpenAI', claude: 'Claude' }[aiProvider()] || 'မရှိပါ (offline mode)') + '</b></div></div>';
 
   html += '<div class="card"><h3>👤 Google အကောင့်နဲ့ ဝင်ရန်</h3>' +
     '<div class="small muted mb">ကိုယ်ပိုင် Google Cloud Console မှ OAuth Client ID ထည့်ပါ။ ID မထည့်ထားရင် login မလိုအပ်ဘဲ local mode နဲ့ အလုပ်လုပ်ပါတယ်။</div>' +
@@ -1463,6 +1472,7 @@ function renderSettings() {
 
   $('btnSaveKeys').addEventListener('click', () => {
     s.geminiKey = $('setGemini').value.trim();
+    s.geminiModel = $('setGeminiModel').value.trim() || 'gemini-3.8-flash';
     s.openaiKey = $('setOpenai').value.trim();
     s.claudeKey = $('setClaude').value.trim();
     saveDB(); toast('Keys များ သိမ်းပြီးပါပြီ ✅'); renderSettings();
