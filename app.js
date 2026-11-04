@@ -42,7 +42,7 @@ function fmtTimeMm(hm) { // 24h -> Burmese 12h label
 
 // ---------------- store (localStorage, versioned) ----------------
 const STORE_KEY = 'healthAppV1';
-const APP_VERSION = '2026-11-05a'; // bump on every deploy; shown in Settings
+const APP_VERSION = '2026-11-05b'; // bump on every deploy; shown in Settings
 function defaultDB() {
   const p1 = uid();
   return {
@@ -1400,8 +1400,14 @@ function renderProgress() {
     $('mWSave').addEventListener('click', () => {
       const w = parseFloat($('mWWeight').value);
       if (!w || w <= 0) { toast('အလေးချိန် မှန်အောင်ထည့်ပါ'); return; }
-      DB.weightLog.push({ id: uid(), profileId: p.id, date: $('mWDate').value || todayStr(),
+      const wd = $('mWDate').value || todayStr();
+      DB.weightLog.push({ id: uid(), profileId: p.id, date: wd,
         weight: w, waist: $('mWWaist').value.trim() });
+      // AUTO-SYNC 2026-11-05: ကျန်းမာရေးဖိုင် အလေးချိန်ကို နောက်ဆုံး မှတ်တမ်းနဲ့ auto ချိန်းတယ်
+      // (ရက်အလိုက်စီ၊ အသစ်ဆုံးကိုယူ — အတိတ်ရက်ကို ပြန်ဖြည့်ရင် profile မထိခိုက်ဘူး)
+      const latest = DB.weightLog.filter(x => x.profileId === p.id)
+        .sort((a, b) => a.date < b.date ? -1 : 1).pop();
+      if (latest) p.weight = latest.weight;
       saveDB(); closeModal(); renderProgress(); toast('မှတ်တမ်းတင်ပြီးပါပြီ ✅');
     });
   });
