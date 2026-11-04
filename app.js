@@ -1435,8 +1435,7 @@ function renderSettings() {
     '<div class="small muted mb">Key တွေကို ဒီဖုန်း/စက်ထဲမှာပဲ သိမ်းထားပါတယ် — server ကို မပို့ပါ။ AI လုပ်ဆောင်ချက်များ: ဆေးဓာတ်ပြုမှု စစ်ဆေးခြင်း၊ အစီအစဉ် ထုတ်လုပ်ခြင်း၊ ပုံမှ အစားအစာ ဆန်းစစ်ခြင်း၊ AI အကြံပြုချက်။</div>' +
     '<label>Gemini API Key</label><input id="setGemini" type="password" value="' + esc(s.geminiKey) + '" placeholder="AIza…">' +
     '<label>Gemini Model</label><input id="setGeminiModel" list="geminiModelList" value="' + esc(geminiModelName()) + '" placeholder="gemini-3.8-flash">' +
-    '<datalist id="geminiModelList"><option value="gemini-3.8-flash"></option><option value="gemini-2.5-flash"></option>' +
-    '<option value="gemini-2.5-pro"></option><option value="gemini-2.0-flash"></option></datalist>' +
+    '<datalist id="geminiModelList"><option value="gemini-3.8-flash"></option></datalist>' +
     '<div class="small muted mb">ကြိုက်တဲ့ model နာမည်ကို ရွေးချယ်နိုင် / ကိုယ်တိုင် ရိုက်ထည့်နိုင်ပါတယ်</div>' +
     '<label>OpenAI API Key</label><input id="setOpenai" type="password" value="' + esc(s.openaiKey) + '" placeholder="sk-…">' +
     '<label>Claude API Key</label><input id="setClaude" type="password" value="' + esc(s.claudeKey) + '" placeholder="sk-ant-…">' +
