@@ -42,7 +42,7 @@ function fmtTimeMm(hm) { // 24h -> Burmese 12h label
 
 // ---------------- store (localStorage, versioned) ----------------
 const STORE_KEY = 'healthAppV1';
-const APP_VERSION = '2026-11-04g'; // bump on every deploy; shown in Settings
+const APP_VERSION = '2026-11-04h'; // bump on every deploy; shown in Settings
 function defaultDB() {
   const p1 = uid();
   return {

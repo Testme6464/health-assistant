@@ -1,4 +1,15 @@
-/* Health Assistant App — mobile-first styles. No external fonts; system fonts only. */
+/* Health Assistant App — mobile-first styles. Bundled Noto Sans Myanmar webfont
+   ensures correct Unicode Myanmar rendering even on phones set to Zawgyi. */
+@font-face{
+  font-family:"Noto Sans Myanmar App";
+  src:url("fonts/noto-sans-myanmar-400.woff2") format("woff2");
+  font-weight:400; font-style:normal; font-display:swap;
+}
+@font-face{
+  font-family:"Noto Sans Myanmar App";
+  src:url("fonts/noto-sans-myanmar-700.woff2") format("woff2");
+  font-weight:700; font-style:normal; font-display:swap;
+}
 :root{
   --green:#0d7a5f; --green-dark:#095c47; --green-soft:#e3f3ee;
   --bg:#f4f7f6; --card:#ffffff; --text:#1c2421; --muted:#6b7a74;
@@ -10,7 +21,7 @@
 html{font-size:16px;}
 body{
   margin:0; background:var(--bg); color:var(--text);
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans Myanmar","Myanmar3","Pyidaungsu",sans-serif;
+  font-family:"Noto Sans Myanmar App",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans Myanmar","Myanmar3","Pyidaungsu",sans-serif;
   padding-bottom:calc(var(--tab-h) + env(safe-area-inset-bottom, 0px));
   line-height:1.55;
 }
