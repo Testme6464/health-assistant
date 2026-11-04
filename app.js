@@ -233,9 +233,500 @@ async function fetchWithRetry(url, opts, tries, onRetry) {
   }
   throw lastErr;
 }
+// ---- Zawgyi -> Unicode (rules from rabbit-node, MIT license) ----
+const zg2uni = (output) => {
+  const rule = [{
+      "from": "\u200B",
+      "to": ""
+    },
+    {
+      "from": "(\u103d|\u1087)",
+      "to": "\u103e"
+    },
+    {
+      "from": "\u103c",
+      "to": "\u103d"
+    },
+    {
+      "from": "(\u103b|\u107e|\u107f|\u1080|\u1081|\u1082|\u1083|\u1084)",
+      "to": "\u103c"
+    },
+    {
+      "from": "(\u103a|\u107d)",
+      "to": "\u103b"
+    },
+    {
+      "from": "\u1039",
+      "to": "\u103a"
+    },
+    {
+      "from": "(\u1066|\u1067)",
+      "to": "\u1039\u1006"
+    },
+    {
+      "from": "\u106a",
+      "to": "\u1009"
+    },
+    {
+      "from": "\u106b",
+      "to": "\u100a"
+    },
+    {
+      "from": "\u106c",
+      "to": "\u1039\u100b"
+    },
+    {
+      "from": "\u106d",
+      "to": "\u1039\u100c"
+    },
+    {
+      "from": "\u106e",
+      "to": "\u100d\u1039\u100d"
+    },
+    {
+      "from": "\u106f",
+      "to": "\u100d\u1039\u100e"
+    },
+    {
+      "from": "\u1070",
+      "to": "\u1039\u100f"
+    },
+    {
+      "from": "(\u1071|\u1072)",
+      "to": "\u1039\u1010"
+    },
+    {
+      "from": "\u1060",
+      "to": "\u1039\u1000"
+    },
+    {
+      "from": "\u1061",
+      "to": "\u1039\u1001"
+    },
+    {
+      "from": "\u1062",
+      "to": "\u1039\u1002"
+    },
+    {
+      "from": "\u1063",
+      "to": "\u1039\u1003"
+    },
+    {
+      "from": "\u1065",
+      "to": "\u1039\u1005"
+    },
+    {
+      "from": "\u1068",
+      "to": "\u1039\u1007"
+    },
+    {
+      "from": "\u1069",
+      "to": "\u1039\u1008"
+    },
+    {
+      "from": "(\u1073|\u1074)",
+      "to": "\u1039\u1011"
+    },
+    {
+      "from": "\u1075",
+      "to": "\u1039\u1012"
+    },
+    {
+      "from": "\u1076",
+      "to": "\u1039\u1013"
+    },
+    {
+      "from": "\u1077",
+      "to": "\u1039\u1014"
+    },
+    {
+      "from": "\u1078",
+      "to": "\u1039\u1015"
+    },
+    {
+      "from": "\u1079",
+      "to": "\u1039\u1016"
+    },
+    {
+      "from": "\u107a",
+      "to": "\u1039\u1017"
+    },
+    {
+      "from": "\u107c",
+      "to": "\u1039\u1019"
+    },
+    {
+      "from": "\u1085",
+      "to": "\u1039\u101c"
+    },
+    {
+      "from": "\u1033",
+      "to": "\u102f"
+    },
+    {
+      "from": "\u1034",
+      "to": "\u1030"
+    },
+    {
+      "from": "\u103f",
+      "to": "\u1030"
+    },
+    {
+      "from": "\u1086",
+      "to": "\u103f"
+    },
+    {
+      "from": "\u1036\u1088",
+      "to": "\u1088\u1036"
+    },
+    {
+      "from": "\u1088",
+      "to": "\u103e\u102f"
+    },
+    {
+      "from": "\u1089",
+      "to": "\u103e\u1030"
+    },
+    {
+      "from": "\u108a",
+      "to": "\u103d\u103e"
+    },
+    {
+      "from": "\u103B\u1064",
+      "to": "\u1064\u103B"
+    },
+    {
+      "from": "(\u1031)?([\u1000-\u1021])\u1064",
+      "to": "\u1004\u103a\u1039$1$2"
+    },
+    {
+      "from": "(\u1031)?([\u1000-\u1021])\u108b",
+      "to": "\u1004\u103a\u1039$1$2\u102d"
+    },
+    {
+      "from": "(\u1031)?([\u1000-\u1021])\u108c",
+      "to": "\u1004\u103a\u1039$1$2\u102e"
+    },
+    {
+      "from": "(\u1031)?([\u1000-\u1021])\u108d",
+      "to": "\u1004\u103a\u1039$1$2\u1036"
+    },
+    {
+      "from": "\u108e",
+      "to": "\u102d\u1036"
+    },
+    {
+      "from": "\u108f",
+      "to": "\u1014"
+    },
+    {
+      "from": "\u1090",
+      "to": "\u101b"
+    },
+    {
+      "from": "\u1091",
+      "to": "\u100f\u1039\u100d"
+    },
+    {
+      "from": "\u1019\u102c(\u107b|\u1093)",
+      "to": "\u1019\u1039\u1018\u102c"
+    },
+    {
+      "from": "(\u107b|\u1093)",
+      "to": "\u1039\u1018"
+    },
+    {
+      "from": "(\u1094|\u1095)",
+      "to": "\u1037"
+    },
+    {
+      "from": "([\u1000-\u1021])\u1037\u1032",
+      "to": "$1\u1032\u1037"
+    },
+    {
+      "from": "\u1096",
+      "to": "\u1039\u1010\u103d"
+    },
+    {
+      "from": "\u1097",
+      "to": "\u100b\u1039\u100b"
+    },
+    {
+      "from": "\u103c([\u1000-\u1021])([\u1000-\u1021])?",
+      "to": "$1\u103c$2"
+    },
+    {
+      "from": "([\u1000-\u1021])\u103c\u103a",
+      "to": "\u103c$1\u103a"
+    },
+    {
+      "from": "\u1047(?=[\u102c-\u1030\u1032\u1036-\u1038\u103d\u1038])",
+      "to": "\u101b"
+    },
+    {
+      "from": "\u1031\u1047",
+      "to": "\u1031\u101b"
+    },
+    {
+      "from": "\u1040(\u102e|\u102f|\u102d\u102f|\u1030|\u1036|\u103d|\u103e)",
+      "to": "\u101d$1"
+    },
+    {
+      "from": "([^\u1040\u1041\u1042\u1043\u1044\u1045\u1046\u1047\u1048\u1049])\u1040\u102b",
+      "to": "$1\u101d\u102b"
+    },
+    {
+      "from": "([\u1040\u1041\u1042\u1043\u1044\u1045\u1046\u1047\u1048\u1049])\u1040\u102b(?!\u1038)",
+      "to": "$1\u101d\u102b"
+    },
+    {
+      "from": "^\u1040(?=\u102b)",
+      "to": "\u101d"
+    },
+    {
+      "from": "\u1040\u102d(?!\u0020?/)",
+      "to": "\u101d\u102d"
+    },
+    {
+      "from": "([^\u1040-\u1049])\u1040([^\u1040-\u1049\u0020]|[\u104a\u104b])",
+      "to": "$1\u101d$2"
+    },
+    {
+      "from": "([^\u1040-\u1049])\u1040(?=[\\f\\n\\r])",
+      "to": "$1\u101d"
+    },
+    {
+      "from": "([^\u1040-\u1049])\u1040$",
+      "to": "$1\u101d"
+    },
+    {
+      "from": "\u1031([\u1000-\u1021])(\u103e)?(\u103b)?",
+      "to": "$1$2$3\u1031"
+    },
+    {
+      "from": "([\u1000-\u1021])\u1031([\u103b\u103c\u103d\u103e]+)",
+      "to": "$1$2\u1031"
+    },
+    {
+      "from": "\u1032\u103d",
+      "to": "\u103d\u1032"
+    },
+    {
+      "from": "([\u102d\u102e])\u103b",
+      "to": "\u103b$1"
+    },
+    {
+      "from": "\u103d\u103b",
+      "to": "\u103b\u103d"
+    },
+    {
+      "from": "\u103a\u1037",
+      "to": "\u1037\u103a"
+    },
+    {
+      "from": "\u102f(\u102d|\u102e|\u1036|\u1037)\u102f",
+      "to": "\u102f$1"
+    },
+    {
+      "from": "(\u102f|\u1030)(\u102d|\u102e)",
+      "to": "$2$1"
+    },
+    {
+      "from": "(\u103e)(\u103b|\u103c)",
+      "to": "$2$1"
+    },
+    {
+      "from": "\u1025(?=[\u1037]?[\u103a\u102c])",
+      "to": "\u1009"
+    },
+    {
+      "from": "\u1025\u102e",
+      "to": "\u1026"
+    },
+    {
+      "from": "\u1005\u103b",
+      "to": "\u1008"
+    },
+    {
+      "from": "\u1036(\u102f|\u1030)",
+      "to": "$1\u1036"
+    },
+    {
+      "from": "\u1031\u1037\u103e",
+      "to": "\u103e\u1031\u1037"
+    },
+    {
+      "from": "\u1031\u103e\u102c",
+      "to": "\u103e\u1031\u102c"
+    },
+    {
+      "from": "\u105a",
+      "to": "\u102b\u103a"
+    },
+    {
+      "from": "\u1031\u103b\u103e",
+      "to": "\u103b\u103e\u1031"
+    },
+    {
+      "from": "(\u102d|\u102e)(\u103d|\u103e)",
+      "to": "$2$1"
+    },
+    {
+      "from": "\u102c\u1039([\u1000-\u1021])",
+      "to": "\u1039$1\u102c"
+    },
+    {
+      "from": "\u103c\u1004\u103a\u1039([\u1000-\u1021])",
+      "to": "\u1004\u103a\u1039$1\u103c"
+    },
+    {
+      "from": "\u1039\u103c\u103a\u1039([\u1000-\u1021])",
+      "to": "\u103a\u1039$1\u103c"
+    },
+    {
+      "from": "\u103c\u1039([\u1000-\u1021])",
+      "to": "\u1039$1\u103c"
+    },
+    {
+      "from": "\u1036\u1039([\u1000-\u1021])",
+      "to": "\u1039$1\u1036"
+    },
+    {
+      "from": "\u1092",
+      "to": "\u100b\u1039\u100c"
+    },
+    {
+      "from": "\u104e",
+      "to": "\u104e\u1004\u103a\u1038"
+    },
+    {
+      "from": "\u1040(\u102b|\u102c|\u1036)",
+      "to": "\u101d$1"
+    },
+    {
+      "from": "\u1025\u1039",
+      "to": "\u1009\u1039"
+    },
+    {
+      "from": "([\u1000-\u1021])\u103c\u1031\u103d",
+      "to": "$1\u103c\u103d\u1031"
+    },
+    {
+      "from": "([\u1000-\u1021])\u103b\u1031\u103d(\u103e)?",
+      "to": "$1\u103b\u103d$2\u1031"
+    },
+    {
+      "from": "([\u1000-\u1021])\u103d\u1031\u103b",
+      "to": "$1\u103b\u103d\u1031"
+    },
+    {
+      "from": "([\u1000-\u1021])\u1031(\u1039[\u1000-\u1021])",
+      "to": "$1$2\u1031"
+    },
+    {
+      "from": "\u1038\u103a",
+      "to": "\u103a\u1038"
+    },
+    {
+      "from": "\u102d\u103a|\u103a\u102d",
+      "to": "\u102d"
+    },
+    {
+      "from": "\u102d\u102f\u103a",
+      "to": "\u102d\u102f"
+    },
+    {
+      "from": "\u0020\u1037",
+      "to": "\u1037"
+    },
+    {
+      "from": "\u1037\u1036",
+      "to": "\u1036\u1037"
+    },
+    {
+      "from": " \u1037",
+      "to": "\u1037"
+    },
+    {
+      "from": "[\u102d]+",
+      "to": "\u102d"
+    },
+    {
+      "from": "[\u103a]+",
+      "to": "\u103a"
+    },
+    {
+      "from": "[\u103d]+",
+      "to": "\u103d"
+    },
+    {
+      "from": "[\u1037]+",
+      "to": "\u1037"
+    },
+    {
+      "from": "[\u102e]+",
+      "to": "\u102e"
+    },
+    {
+      "from": "\u102d\u102e|\u102e\u102d",
+      "to": "\u102e"
+    },
+    {
+      "from": "\u102f\u102d",
+      "to": "\u102d\u102f"
+    },
+    {
+      "from": "\u1037\u1037",
+      "to": "\u1037"
+    },
+    {
+      "from": "\u1032\u1032",
+      "to": "\u1032"
+    },
+    {
+      "from": "\u1044\u1004\u103a\u1038",
+      "to": "\u104E\u1004\u103a\u1038"
+    },
+    {
+      "from": "([\u102d\u102e])\u1039([\u1000-\u1021])",
+      "to": "\u1039$2$1"
+    },
+    {
+      "from": "\u1036\u103d",
+      "to": "\u103d\u1036"
+    }
+  ];
+  return replace_with_rule(rule, output);
+}
+const replace_with_rule = (rule, output) => {
+
+  const max_loop = rule.length;
+  for(let i=0; i < max_loop; i++) {
+
+    const data = rule[i];
+    const from = data["from"];
+    const to = data["to"];
+
+    const from_regex = new RegExp(from,"g");
+    output = output.replace(from_regex, to);
+  }
+
+  return output;
+
+}
+// Detect Zawgyi: vowel sign E (U+1031) stored AFTER a consonant is invalid in Unicode.
+function looksZawgyi(t) {
+  return /[\u1050-\u109F]/.test(t) || /[\u1000-\u1021][\u102B-\u1030\u1032-\u103E]*\u1031/.test(t);
+}
+function toUnicodeMyanmar(t) {
+  if (t == null) return t;
+  t = String(t);
+  return looksZawgyi(t) ? zg2uni(t) : t;
+}
+
 // Client-side throttle for Pollinations free lane (~1 reply per 45s per IP).
 let lastPollinationsCall = 0;
-async function aiChat(systemPrompt, userPrompt, onRetry) {
+async function aiChatRaw(systemPrompt, userPrompt, onRetry) {
   const s = DB.settings, prov = aiProvider();
   if (!prov) throw new Error('API key မရှိပါ');  if (prov === 'gemini') {
     const j = await fetchWithRetry('https://generativelanguage.googleapis.com/v1beta/models/' + geminiModelName() + ':generateContent?key=' + encodeURIComponent(s.geminiKey), {
@@ -298,6 +789,10 @@ async function aiChat(systemPrompt, userPrompt, onRetry) {
   if (!r.ok) throw new Error((j.error && j.error.message) || ('HTTP ' + r.status));
   return j.content.map(b => b.text || '').join('');
 }
+// Wrapper: small free models often emit Zawgyi-encoded Burmese; normalize to Unicode.
+async function aiChat(systemPrompt, userPrompt, onRetry) {
+  return toUnicodeMyanmar(await aiChatRaw(systemPrompt, userPrompt, onRetry));
+}
 // Gemini vision for food photo analysis. Returns {items:[{name,kcal}], totalKcal, note}
 async function geminiFoodVision(dataUrl, onRetry) {
   const s = DB.settings;
@@ -312,7 +807,7 @@ async function geminiFoodVision(dataUrl, onRetry) {
     body: JSON.stringify({ contents: [{ parts: [{ text: prompt },
       { inline_data: { mime_type: m[1], data: m[2] } }] }] })
   }, 3, onRetry);
-  const text = j.candidates[0].content.parts.map(p => p.text || '').join('');
+  const text = toUnicodeMyanmar(j.candidates[0].content.parts.map(p => p.text || '').join(''));
   const jm = text.match(/\{[\s\S]*\}/);
   if (!jm) throw new Error('AI အဖြေကို ဖတ်မရပါ');
   const parsed = JSON.parse(jm[0]);
@@ -900,23 +1395,48 @@ const onRetry = (n, total, note) => { btn.textContent = note === 'wait' ? 'ခ�
 btn.disabled = true; btn.textContent = 'AI ထုတ်လုပ်နေသည်…';
 // Exact headers the prompt demands — used to validate the AI actually returned a plan.
 const PLAN_HEADERS = ['စားသောက်ချိန်', 'အိပ်စက်ချိန်', 'လေ့ကျင့်ခန်း', 'စားသင့်', 'ရှောင်'];
-const planHasHeaders = (ans) => PLAN_HEADERS.filter(h => ans.includes(h)).length >= 3;
-const PLAN_PROMPT = 'You are a health planner. Reply ONLY in Burmese (Myanmar script). ' +
-'Output a one-month personal health plan using EXACTLY these 5 section headers, in this order:\n' +
-'## 🍽️ စားသောက်ချိန်\n## 😴 အိပ်စက်ချိန်\n## 🏃 လေ့ကျင့်ခန်း (၄ ပတ်)\n## 🥗 စားသင့်သောအစားအစာများ\n## 🚫 ရှောင်ရန်များ\n' +
-'Be specific with exact times. Do not ask any questions. No preamble, no explanations outside the sections. No medical diagnosis.';
-try {
-const userPrompt = 'Profile: name ' + p.name + ', age ' + (p.age || '?') + ', gender ' + (p.gender || '?') +
-', height ' + (p.height || '?') + 'cm, weight ' + (p.weight || '?') + 'kg, BMI ' + ((calcBMI(p) || 0).toFixed(1)) +
-', goal: ' + (GOAL_LABEL[p.goal] || '') + ', conditions: ' + (p.conditions.join(', ') || 'none') +
-', allergies: ' + (p.allergies.join(', ') || 'none') + '. Daily calorie target ' + calorieTarget(p) + ' kcal.';
-let ans = await aiChat(PLAN_PROMPT, userPrompt, onRetry);
-if (!planHasHeaders(ans)) {
-  // Small free models sometimes ramble instead of following the format — one strict retry.
-  ans = await aiChat(PLAN_PROMPT + '\nSTRICT: output ONLY the 5 sections above. Do not ask questions.', userPrompt, onRetry);
-  if (!planHasHeaders(ans)) throw new Error('AI အဖြေ ပုံစံမမှန်ပါ');
+function planOutputOk(ans) {
+  const a = ans.replace(/\b(kcal|kg|cm|min|AM|PM)\b/gi, '');
+  if (PLAN_HEADERS.filter(h => a.includes(h)).length < 3) return false;
+  if (/[A-Za-z]{4,}/.test(a)) return false; // English words slipped in — must be Burmese only
+  return true;
 }
-DB.plans[p.id] = { month: currentMonthKey(), createdAt: new Date().toISOString(), ai: true, rawAi: ans};
+const PLAN_PROMPT =
+'You are an expert health planner and nutritionist. ' +
+'Reply ONLY in Burmese using standard Unicode Myanmar script (never Zawgyi encoding). ' +
+'Every word must be Burmese except units like kcal, kg, cm, min. Do not use English words. ' +
+'Study the health profile below CAREFULLY. Tailor EVERY section to this person\'s specific conditions, ' +
+'medications, age, BMI and goal: name their conditions explicitly and add one short line in each section ' +
+'explaining why the advice suits them. Never give generic advice that ignores their conditions. ' +
+'Output using EXACTLY these 5 section headers, in this order:\n' +
+'## 🍽️ စားသောက်ချိန်\n## 😴 အိပ်စက်ချိန်\n## 🏃 လေ့ကျင့်ခန်း (၄ ပတ်)\n## 🥗 စားသင့်သောအစားအစာများ\n## 🚫 ရှောင်ရန်များ\n' +
+'Be specific: exact times, dish names with portions and kcal, a day-by-day 4-week workout schedule with durations. ' +
+'Do not ask questions. No preamble. No medical diagnosis.';
+try {
+const bmi = calcBMI(p);
+const meds = DB.meds.filter(m => m.profileId === p.id);
+const userPrompt =
+'Name: ' + p.name + '\n' +
+'Age: ' + (p.age || '?') + ', Gender: ' + (p.gender || '?') + '\n' +
+'Height: ' + (p.height || '?') + ' cm, Weight: ' + (p.weight || '?') + ' kg, BMI: ' +
+(bmi ? bmi.toFixed(1) + ' (' + bmiLabel(bmi) + ')' : '?') + '\n' +
+'Health goal: ' + (GOAL_LABEL[p.goal] || '') + '\n' +
+'Existing health conditions (MUST tailor the plan to these): ' + (p.conditions.join(', ') || 'none') + '\n' +
+'Allergies: ' + (p.allergies.join(', ') || 'none') + '\n' +
+'Current medications: ' + (meds.map(m => m.name + (m.dosage ? ' ' + m.dosage : '') + (m.reason ? ' (' + m.reason + ')' : '')).join('; ') || 'none') + '\n' +
+'Daily calorie target: ' + calorieTarget(p) + ' kcal\n' +
+'Usual bedtime: ' + (DB.reminders.bedtime || '?');
+let ans = await aiChat(PLAN_PROMPT, userPrompt, onRetry);
+if (!planOutputOk(ans)) {
+  // Small free models sometimes ramble or mix in English — one strict retry.
+  ans = await aiChat(PLAN_PROMPT + '\nSTRICT: output ONLY the 5 sections above, all words Burmese except units. Do not ask questions.', userPrompt, onRetry);
+  if (!planOutputOk(ans)) throw new Error('AI အဖြေ ပုံစံမမှန်ပါ');
+}
+const snap = 'အသက် ' + (p.age || '?') + ' · BMI ' + (bmi ? bmi.toFixed(1) + ' (' + bmiLabel(bmi) + ')' : '?') +
+' · ရည်မှန်းချက်: ' + (GOAL_LABEL[p.goal] || '') +
+' · အခံရောဂါ: ' + (p.conditions.join(', ') || 'မရှိ') +
+' · သောက်နေသောဆေး: ' + (meds.map(m => m.name).join(', ') || 'မရှိ');
+DB.plans[p.id] = { month: currentMonthKey(), createdAt: new Date().toISOString(), ai: true, rawAi: ans, snap: snap };
 saveDB(); renderPlan(); toast('AI အစီအစဉ် ရပြီးပါပြီ ✅');
 } catch (e) {
 toast('AI ခေါ်ဆို၍မရပါ: ' + e.message + ' — offline နဲ့ ထုတ်ကြည့်ပါ');
@@ -927,7 +1447,9 @@ function planHtml(plan) {
 if (plan.ai && plan.rawAi) {
 // Render "## Header" markdown lines as real section headers.
 const parts = esc(plan.rawAi).split(/^## /m);
-let out = '<div style="white-space:pre-wrap">' + parts[0] + '</div>';
+let out = '';
+if (plan.snap) out += '<div class="info-box mb">🔍 AI က ဒီအချက်တွေကို အခြေခံပြီး ဆွဲထားတာပါ:<br>' + esc(plan.snap) + '</div>';
+out += '<div style="white-space:pre-wrap">' + parts[0] + '</div>';
 for (let i = 1; i < parts.length; i++) {
 const nl = parts[i].indexOf('\n');
 const head = nl >= 0 ? parts[i].slice(0, nl) : parts[i];
