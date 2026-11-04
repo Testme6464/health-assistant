@@ -258,8 +258,10 @@ async function aiChat(systemPrompt, userPrompt, onRetry) {
   }
   // custom OpenAI-compatible provider (Groq, OpenRouter, ...): base URL + key + model
   if (prov === 'custom') {
-    const base = (s.customBase || '').replace(/\/+$/, '');
-    const j = await fetchWithRetry(base + '/chat/completions', {
+    let base = (s.customBase || '').trim().replace(/\/+$/, '');
+    // tolerate the full endpoint pasted by the user — don't double the path
+    if (!/\/chat\/completions$/.test(base)) base += '/chat/completions';
+    const j = await fetchWithRetry(base, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + s.customKey },
       body: JSON.stringify({ model: (s.customModel || '').trim() || 'openai/gpt-oss-20b',
