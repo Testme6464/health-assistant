@@ -178,17 +178,45 @@ function geminiModelName() {
   const m = (DB.settings && DB.settings.geminiModel || '').trim();
   return m || 'gemini-3.8-flash';
 }
+// Fetch with automatic retry for transient Gemini overload/rate-limit (503/429).
+// Free-tier models often spike; retry a few times with growing delays before giving up.
+async function geminiFetch(url, opts, tries) {
+  tries = tries || 3;
+  let lastErr = new Error('AI ခေါ်ဆို၍မရပါ');
+  for (let i = 0; i < tries; i++) {
+    try {
+      const r = await fetch(url, opts);
+      let j = {};
+      try { j = await r.json(); } catch (e) { /* non-JSON body */ }
+      if (r.ok) return j;
+      const msg = (j.error && j.error.message) || ('HTTP ' + r.status);
+      lastErr = new Error(msg);
+      if ((r.status === 503 || r.status === 429) && i < tries - 1) {
+        await new Promise(res => setTimeout(res, (i + 1) * 4000));
+        continue;
+      }
+      throw lastErr;
+    } catch (e) {
+      lastErr = e;
+      // Network-level failure: retry too, unless this was the last attempt
+      if (i < tries - 1 && e instanceof TypeError) {
+        await new Promise(res => setTimeout(res, (i + 1) * 4000));
+        continue;
+      }
+      throw e;
+    }
+  }
+  throw lastErr;
+}
 async function aiChat(systemPrompt, userPrompt) {
   const s = DB.settings, prov = aiProvider();
   if (!prov) throw new Error('API key မရှိပါ');
   if (prov === 'gemini') {
-    const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + geminiModelName() + ':generateContent?key=' + encodeURIComponent(s.geminiKey), {
+    const j = await geminiFetch('https://generativelanguage.googleapis.com/v1beta/models/' + geminiModelName() + ':generateContent?key=' + encodeURIComponent(s.geminiKey), {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ system_instruction: { parts: [{ text: systemPrompt }] },
         contents: [{ parts: [{ text: userPrompt }] }] })
     });
-    const j = await r.json();
-    if (!r.ok) throw new Error((j.error && j.error.message) || ('HTTP ' + r.status));
     return j.candidates[0].content.parts.map(p => p.text || '').join('');
   }
   if (prov === 'openai') {
@@ -223,13 +251,11 @@ async function geminiFoodVision(dataUrl) {
   const prompt = 'Analyze this food photo. Identify each visible food item and estimate calories ' +
     'for a typical serving. Reply ONLY with JSON: {"items":[{"name":"<Burmese name>","kcal":<number>}],"totalKcal":<number>}. ' +
     'Use Burmese (Myanmar script) for names. If no food is visible, return {"items":[],"totalKcal":0}.';
-  const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + geminiModelName() + ':generateContent?key=' + encodeURIComponent(s.geminiKey), {
+  const j = await geminiFetch('https://generativelanguage.googleapis.com/v1beta/models/' + geminiModelName() + ':generateContent?key=' + encodeURIComponent(s.geminiKey), {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ contents: [{ parts: [{ text: prompt },
       { inline_data: { mime_type: m[1], data: m[2] } }] }] })
   });
-  const j = await r.json();
-  if (!r.ok) throw new Error((j.error && j.error.message) || ('HTTP ' + r.status));
   const text = j.candidates[0].content.parts.map(p => p.text || '').join('');
   const jm = text.match(/\{[\s\S]*\}/);
   if (!jm) throw new Error('AI အဖြေကို ဖတ်မရပါ');
