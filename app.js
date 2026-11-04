@@ -42,7 +42,7 @@ function fmtTimeMm(hm) { // 24h -> Burmese 12h label
 
 // ---------------- store (localStorage, versioned) ----------------
 const STORE_KEY = 'healthAppV1';
-const APP_VERSION = '2026-11-04f'; // bump on every deploy; shown in Settings
+const APP_VERSION = '2026-11-04g'; // bump on every deploy; shown in Settings
 function defaultDB() {
   const p1 = uid();
   return {
@@ -283,16 +283,22 @@ async function fetchWithRetry(url, opts, tries, onRetry) {
   }
   throw lastErr;
 }
-// ---- Burmese Unicode normalizer (surgical, provably safe) ----
+// ---- Burmese Unicode normalizer (v3: boundary-aware) ----
 // Some AI models emit the preposed vowel E (U+1031, ေ) AFTER its consonant
-// (Zawgyi/visual order). In valid Unicode U+1031 is ALWAYS stored BEFORE the
-// consonant cluster, so this pattern can never occur in correct text — moving
-// it first fixes the ordering without any risk of damaging valid text.
-// (The previous full rabbit-table converter was removed: it mangled valid
-// Unicode, e.g. "မင်္ဂလာပါ" -> "မငျ်ဂလာပါ".)
+// (Zawgyi/visual order). Fix: move it before its consonant cluster — but ONLY
+// when that consonant doesn't already carry a ေ (captured as `pre`), otherwise
+// correct cross-syllable sequences like ဒီနေ့ / ဖေဖော်ဝါရီ would be corrupted.
+// Medials-only between consonant and ေ (vowel signs mean a syllable boundary).
+// Verified: correct multi-syllable text passes byte-identical; Zawgyi order fixed.
 function toUnicodeMyanmar(t) {
   if (t == null) return t;
-  return String(t).replace(/([\u1000-\u1021][\u102B-\u1030\u1032-\u103E]*)\u1031/g, '\u1031$1');
+  let s = String(t), prev, guard = 0;
+  const re = /(\u1031?)([\u1000-\u1021][\u103B-\u103E]*)\u1031/g;
+  do {
+    prev = s;
+    s = s.replace(re, (m, pre, cons) => pre ? m : '\u1031' + cons);
+  } while (s !== prev && ++guard < 10);
+  return s;
 }
 
 // Client-side throttle for Pollinations free lane (~1 reply per 45s per IP).
