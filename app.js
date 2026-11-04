@@ -1395,11 +1395,10 @@ const onRetry = (n, total, note) => { btn.textContent = note === 'wait' ? 'ခ�
 btn.disabled = true; btn.textContent = 'AI ထုတ်လုပ်နေသည်…';
 // Exact headers the prompt demands — used to validate the AI actually returned a plan.
 const PLAN_HEADERS = ['စားသောက်ချိန်', 'အိပ်စက်ချိန်', 'လေ့ကျင့်ခန်း', 'စားသင့်', 'ရှောင်'];
+function planHeaderHits(ans) { return PLAN_HEADERS.filter(h => ans.includes(h)).length; }
 function planOutputOk(ans) {
   const a = ans.replace(/\b(kcal|kg|cm|min|AM|PM)\b/gi, '');
-  if (PLAN_HEADERS.filter(h => a.includes(h)).length < 3) return false;
-  if (/[A-Za-z]{4,}/.test(a)) return false; // English words slipped in — must be Burmese only
-  return true;
+  return planHeaderHits(a) >= 2 && !/[A-Za-z]{4,}/.test(a);
 }
 const PLAN_PROMPT =
 'You are an expert health planner and nutritionist. ' +
@@ -1428,10 +1427,13 @@ const userPrompt =
 'Usual bedtime: ' + (DB.reminders.bedtime || '?');
 let ans = await aiChat(PLAN_PROMPT, userPrompt, onRetry);
 if (!planOutputOk(ans)) {
-  // Small free models sometimes ramble or mix in English — one strict retry.
-  ans = await aiChat(PLAN_PROMPT + '\nSTRICT: output ONLY the 5 sections above, all words Burmese except units. Do not ask questions.', userPrompt, onRetry);
-  if (!planOutputOk(ans)) throw new Error('AI အဖြေ ပုံစံမမှန်ပါ');
+  // One strict retry; then keep whichever version is better — never fail outright
+  // over minor format slips (a weak free model may still mix in some English).
+  const retry = await aiChat(PLAN_PROMPT + '\nSTRICT: all words Burmese except units kcal/kg/cm/min; use the 5 headers exactly; no questions.', userPrompt, onRetry);
+  if (planOutputOk(retry)) ans = retry;
+  else if (planHeaderHits(retry) > planHeaderHits(ans)) ans = retry;
 }
+if (!ans || ans.length < 150) throw new Error('AI အဖြေ ပုံစံမမှန်ပါ');
 const snap = 'အသက် ' + (p.age || '?') + ' · BMI ' + (bmi ? bmi.toFixed(1) + ' (' + bmiLabel(bmi) + ')' : '?') +
 ' · ရည်မှန်းချက်: ' + (GOAL_LABEL[p.goal] || '') +
 ' · အခံရောဂါ: ' + (p.conditions.join(', ') || 'မရှိ') +
