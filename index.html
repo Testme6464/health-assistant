@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0d7a5f">
+<title>ကျန်းမာရေး အထောက်အကူ</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-title">🩺 ကျန်းမာရေး အထောက်အကူ</div>
+  <div class="topbar-profile">
+    <select id="profileSwitcher" aria-label="Profile ရွေးချယ်ရန်"></select>
+    <button id="btnAddProfile" class="icon-btn" title="Profile အသစ်ထည့်ရန်">＋</button>
+  </div>
+</header>
+
+<main id="views">
+  <section class="view" id="view-home"></section>
+  <section class="view" id="view-profile"></section>
+  <section class="view" id="view-meds"></section>
+  <section class="view" id="view-plan"></section>
+  <section class="view" id="view-food"></section>
+  <section class="view" id="view-remind"></section>
+  <section class="view" id="view-progress"></section>
+  <section class="view" id="view-symptom"></section>
+  <section class="view" id="view-emergency"></section>
+  <section class="view" id="view-period"></section>
+  <section class="view" id="view-report"></section>
+  <section class="view" id="view-settings"></section>
+</main>
+
+<nav id="tabbar" aria-label="အောက်ခြေ မီနူး"></nav>
+
+<!-- Modal dialog -->
+<div id="modalOverlay" class="modal-overlay hidden">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <div id="modalTitle" class="modal-title"></div>
+      <button id="modalClose" class="icon-btn" aria-label="ပိတ်ရန်">✕</button>
+    </div>
+    <div id="modalBody" class="modal-body"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<!-- Plain scripts only: no modules, no CDN. Works offline and from file:// -->
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

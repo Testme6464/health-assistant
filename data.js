@@ -1,0 +1,146 @@
+// Health Assistant — static data file (plain script, no modules).
+// All user-visible strings are in Burmese (Myanmar script).
+// Attached to window: FOOD_DB, DRUG_INTERACTIONS, COMMON_SYMPTOMS, normalizeDrugName.
+
+window.FOOD_DB = [
+  // ---- Staples / rice ----
+  { name: "ထမင်း", kcal: 206, unit: "ပန်းကန် ၁" },
+  { name: "ထမင်းကြော်", kcal: 380, unit: "ပန်းကန် ၁" },
+  { name: "ပဲပြုတ်ထမင်း", kcal: 340, unit: "ပန်းကန် ၁" },
+  { name: "ဒံပေါက်", kcal: 620, unit: "ပန်းကန် ၁" },
+
+  // ---- Curries / mains ----
+  { name: "ကြက်သားဟင်း", kcal: 250, unit: "ပွဲ ၁" },
+  { name: "ဝက်သားဟင်း", kcal: 320, unit: "ပွဲ ၁" },
+  { name: "ငါးဟင်း", kcal: 180, unit: "ပွဲ ၁" },
+  { name: "ကြက်ဥကြော်", kcal: 180, unit: "ပွဲ ၁" },
+  { name: "ကြက်ဥပြုတ်", kcal: 155, unit: "လုံး ၁" },
+  { name: "ပဲဟင်း", kcal: 160, unit: "ပန်းကန် ၁" },
+  { name: "ချဉ်ပေါင်ဟင်း", kcal: 120, unit: "ပန်းကန် ၁" },
+  { name: "ကန်စွန်းရွက်ကြော်", kcal: 90, unit: "ပန်းကန် ၁" },
+  { name: "ဟင်းနုနွယ်ကြော်", kcal: 80, unit: "ပန်းကန် ၁" },
+  { name: "တို့ဟူးကြော်", kcal: 220, unit: "ပွဲ ၁" },
+  { name: "တို့ဟူးနွေး", kcal: 200, unit: "ပွဲ ၁" },
+
+  // ---- Noodles / mohinga ----
+  { name: "မုန့်ဟင်းခါး", kcal: 450, unit: "ပန်းကန် ၁" },
+  { name: "အုန်းနို့ခေါက်ဆွဲ", kcal: 520, unit: "ပန်းကန် ၁" },
+  { name: "ရှမ်းခေါက်ဆွဲ", kcal: 430, unit: "ပန်းကန် ၁" },
+  { name: "နန်းကြီးသုပ်", kcal: 380, unit: "ပန်းကန် ၁" },
+  { name: "ကြာဇံချက်", kcal: 320, unit: "ပန်းကန် ၁" },
+  { name: "ခေါက်ဆွဲကြော်", kcal: 480, unit: "ပန်းကန် ၁" },
+  { name: "မုန့်တီ", kcal: 350, unit: "ပန်းကန် ၁" },
+
+  // ---- Salads / snacks ----
+  { name: "ငါးထမင်းနယ်", kcal: 320, unit: "ပန်းကန် ၁" },
+  { name: "ငါးဖယ်သုပ်", kcal: 240, unit: "ပန်းကန် ၁" },
+  { name: "သရက်သီးသုပ်", kcal: 150, unit: "ပန်းကန် ၁" },
+  { name: "ဆမူဆာ", kcal: 120, unit: "လုံး ၁" },
+  { name: "အီကြာကွေး", kcal: 210, unit: "ချောင်း ၁" },
+  { name: "နန်းပြား", kcal: 150, unit: "ပြား ၁" },
+  { name: "ပလာတာ", kcal: 290, unit: "ပြား ၁" },
+
+  // ---- Grilled / fried ----
+  { name: "ကြက်ကင်", kcal: 240, unit: "ဖတ် ၁" },
+  { name: "ငါးကင်", kcal: 190, unit: "ကောင် ၁" },
+  { name: "ဝက်အူချောင်း", kcal: 170, unit: "ချောင်း ၁" },
+  { name: "ကြက်ကြော်", kcal: 320, unit: "ဖတ် ၁" },
+  { name: "အာလူးကြော်", kcal: 365, unit: "ထုပ် ၁" },
+
+  // ---- Desserts / sweets ----
+  { name: "ရွှေရင်အေး", kcal: 280, unit: "ခွက် ၁" },
+  { name: "သာကူ", kcal: 220, unit: "ခွက် ၁" },
+  { name: "ကောက်ညှင်းပေါင်း", kcal: 310, unit: "ထုပ် ၁" },
+  { name: "ကိတ်မုန့်", kcal: 350, unit: "ဖတ် ၁" },
+  { name: "ဒိုးနတ်", kcal: 260, unit: "လုံး ၁" },
+  { name: "ရေခဲမုန့်", kcal: 210, unit: "ခွက် ၁" },
+
+  // ---- Drinks ----
+  { name: "လက်ဖက်ရည်", kcal: 110, unit: "ခွက် ၁" },
+  { name: "ကော်ဖီနို့", kcal: 95, unit: "ခွက် ၁" },
+  { name: "သံပုရာရည်", kcal: 60, unit: "ခွက် ၁" },
+  { name: "ကြံရည်", kcal: 120, unit: "ခွက် ၁" },
+  { name: "နွားနို့", kcal: 150, unit: "ခွက် ၁" },
+  { name: "ပဲနို့", kcal: 80, unit: "ခွက် ၁" },
+  { name: "ဒိန်ချဉ်", kcal: 110, unit: "ခွက် ၁" },
+
+  // ---- Fruits ----
+  { name: "ပန်းသီး", kcal: 95, unit: "လုံး ၁" },
+  { name: "ငှက်ပျောသီး", kcal: 105, unit: "လုံး ၁" },
+  { name: "လိမ္မော်", kcal: 62, unit: "လုံး ၁" },
+  { name: "သရက်သီး", kcal: 99, unit: "လုံး ၁" },
+  { name: "ဖရဲသီး", kcal: 46, unit: "ဖတ် ၁" },
+  { name: "ထောပတ်သီး", kcal: 240, unit: "လုံး ၁" },
+  { name: "ဒူးရင်းသီး", kcal: 147, unit: "ဖတ် ၁" },
+
+  // ---- Western / misc ----
+  { name: "မြေပဲ", kcal: 285, unit: "လက် ၁ ဆုပ်" },
+  { name: "ပီဇာ", kcal: 285, unit: "ဖတ် ၁" },
+  { name: "ဘာဂါ", kcal: 550, unit: "လုံး ၁" },
+  { name: "စမူဆာကြက်", kcal: 310, unit: "ထုပ် ၁" },
+  { name: "ကောက်ညှင်းထုပ်", kcal: 220, unit: "ထုပ် ၁" },
+  { name: "ပဲကြာဇံကြော်", kcal: 290, unit: "ပန်းကန် ၁" }
+];
+
+// Common drug-drug interactions.
+// drugs: two lowercase generic names. level: "high" | "medium" | "low".
+// noteMm: Burmese explanation of the risk (informational only, not medical advice).
+window.DRUG_INTERACTIONS = [
+  { drugs: ["warfarin", "aspirin"], level: "high", noteMm: "သွေးထွက်နိုင်ခြေ များစေသည်။" },
+  { drugs: ["warfarin", "ibuprofen"], level: "high", noteMm: "သွေးထွက်နိုင်ခြေ များစေသည်။ အစာအိမ်သွေးထွက်နိုင်သည်။" },
+  { drugs: ["aspirin", "ibuprofen"], level: "medium", noteMm: "အစာအိမ်နာရောင်၊ သွေးထွက်နိုင်ခြေ များစေသည်။" },
+  { drugs: ["metformin", "alcohol"], level: "medium", noteMm: "သွေးထဲမှာ လက်တစ်အက်ဆစ် များလာနိုင်သည်။" },
+  { drugs: ["lisinopril", "potassium"], level: "high", noteMm: "သွေးတွင်း ပိုတက်ဆီယမ် အလွန်အမင်း များစေနိုင်သည်။" },
+  { drugs: ["lisinopril", "ibuprofen"], level: "medium", noteMm: "ကျောက်ကပ် ထိခိုက်နိုင်ပြီး သွေးပေါင်ကျ ဆေးအာနိသင် လျော့နိုင်သည်။" },
+  { drugs: ["atorvastatin", "grapefruit"], level: "medium", noteMm: "ဆေး၏ သွေးတွင်းပမာဏ များစေပြီး ကြွက်သားထိခိုက်နိုင်ခြေ တိုးသည်။" },
+  { drugs: ["amlodipine", "grapefruit"], level: "medium", noteMm: "သွေးပေါင် အလွန်ကျနိုင်ခြေ ရှိသည်။" },
+  { drugs: ["levothyroxine", "calcium"], level: "medium", noteMm: "သိုင်းရွိုက်ဆေး စုပ်ယူမှု လျော့နည်းစေသည်။" },
+  { drugs: ["levothyroxine", "iron"], level: "medium", noteMm: "သိုင်းရွိုက်ဆေး စုပ်ယူမှု လျော့နည်းစေသည်။" },
+  { drugs: ["omeprazole", "clopidogrel"], level: "high", noteMm: "သွေးကျဲဆေး အာနိသင် လျော့ကျစေနိုင်သည်။" },
+  { drugs: ["fluoxetine", "tramadol"], level: "high", noteMm: "ဆီရိုတိုနင် ဆိုးဝါးသည့် လက္ခဏာ (serotonin syndrome) ဖြစ်နိုင်သည်။" },
+  { drugs: ["sertraline", "ibuprofen"], level: "medium", noteMm: "သွေးထွက်နိုင်ခြေ တိုးနိုင်သည်။" },
+  { drugs: ["metoprolol", "verapamil"], level: "high", noteMm: "နှလုံးခုန် နှေးလွန်းပြီး သွေးပေါင် အလွန်ကျနိုင်သည်။" },
+  { drugs: ["digoxin", "furosemide"], level: "high", noteMm: "ပိုတက်ဆီယမ် လျော့သွားပြီး နှလုံးဆေးအဆိပ် သက်ရောက်မှု များစေသည်။" },
+  { drugs: ["furosemide", "ibuprofen"], level: "medium", noteMm: "ဆီးဆေး အာနိသင် လျော့ကျစေနိုင်သည်။" },
+  { drugs: ["insulin", "alcohol"], level: "high", noteMm: "သွေးသကြားဓာတ် အလွန်ကျဆင်းနိုင်သည်။" },
+  { drugs: ["glipizide", "alcohol"], level: "high", noteMm: "သွေးသကြားဓာတ် အလွန်ကျဆင်းနိုင်သည်။" },
+  { drugs: ["prednisone", "ibuprofen"], level: "medium", noteMm: "အစာအိမ်နာနှင့် သွေးထွက်နိုင်ခြေ များစေသည်။" },
+  { drugs: ["ciprofloxacin", "calcium"], level: "medium", noteMm: "ပဋိဇီဝဆေး စုပ်ယူမှု လျော့နည်းစေသည်။" },
+  { drugs: ["tetracycline", "milk"], level: "medium", noteMm: "နို့ထဲရှိ ကယ်လ်ဆီယမ်က ဆေး စုပ်ယူမှု လျော့နည်းစေသည်။" },
+  { drugs: ["sildenafil", "nitroglycerin"], level: "high", noteMm: "သွေးပေါင် အလွန်အမင်း ကျနိုင်ပြီး အန္တရာယ် ကြီးမားသည်။" },
+  { drugs: ["carbamazepine", "grapefruit"], level: "medium", noteMm: "ဆေးပမာဏ သွေးတွင်း များစေပြီး အဆိပ်သက်ရောက်မှု ဖြစ်နိုင်သည်။" },
+  { drugs: ["lithium", "ibuprofen"], level: "high", noteMm: "သွေးတွင်း လီသီယမ် ပမာဏ များစေပြီး အဆိပ်ဖြစ်နိုင်သည်။" },
+  { drugs: ["methotrexate", "ibuprofen"], level: "high", noteMm: "မက်သထရက်ဇိတ် အဆိပ်သက်ရောက်မှု များစေနိုင်သည်။" },
+  { drugs: ["theophylline", "ciprofloxacin"], level: "medium", noteMm: "သွေးတွင်း သီအိုဖိုင်လင် ပမာဏ များစေနိုင်သည်။" },
+  { drugs: ["spironolactone", "potassium"], level: "high", noteMm: "သွေးတွင်း ပိုတက်ဆီယမ် အလွန်များနိုင်သည်။" },
+  { drugs: ["tramadol", "alcohol"], level: "high", noteMm: "အသက်ရှူ နှေးကွေးပြီး မူးဝေ အန္တရာယ် ကြီးမားသည်။" },
+  { drugs: ["paracetamol", "alcohol"], level: "medium", noteMm: "အသည်းထိခိုက်နိုင်ခြေ များစေသည်။" },
+  { drugs: ["allopurinol", "azathioprine"], level: "high", noteMm: "အဇာသီယိုပရင် အဆိပ်သက်ရောက်မှု အလွန်များစေနိုင်သည်။" }
+];
+
+// Common symptom names in Burmese.
+window.COMMON_SYMPTOMS = [
+  "ခေါင်းကိုက်",
+  "ဖျားနာ",
+  "ချောင်းဆိုး",
+  "လည်ချောင်းနာ",
+  "ဗိုက်နာ",
+  "ဝမ်းလျှော",
+  "ဝမ်းချုပ်",
+  "ပျို့အန်",
+  "မူးဝေ",
+  "မောပန်း",
+  "အိပ်မပျော်",
+  "အိပ်မက်ဆိုး",
+  "ရင်တုန်",
+  "အသက်ရှူကြပ်",
+  "အရေပြားယား",
+  "ကြွက်သားနာ",
+  "အဆစ်နာ",
+  "မျက်စိနာ"
+];
+
+// Normalize a drug name for comparison: lowercase + trim.
+window.normalizeDrugName = function (s) {
+  return String(s || "").toLowerCase().trim();
+};
