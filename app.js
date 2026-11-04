@@ -42,7 +42,7 @@ function fmtTimeMm(hm) { // 24h -> Burmese 12h label
 
 // ---------------- store (localStorage, versioned) ----------------
 const STORE_KEY = 'healthAppV1';
-const APP_VERSION = '2026-11-04i'; // bump on every deploy; shown in Settings
+const APP_VERSION = '2026-11-05a'; // bump on every deploy; shown in Settings
 function defaultDB() {
   const p1 = uid();
   return {
@@ -1537,10 +1537,12 @@ function renderPeriod() {
   if (logs.length >= 2) {
     const diffs = [];
     for (let i = 0; i < Math.min(3, logs.length - 1); i++) {
-      diffs.push(Math.round((new Date(logs[i].start) - new Date(logs[i + 1].start)) / 86400000));
+      // FIX 2026-11-05: diff direction was inverted (gave -30). logs sorted oldest-first,
+      // so diff = newer - older; predict from the MOST RECENT entry, not the oldest.
+      diffs.push(Math.round((new Date(logs[i + 1].start) - new Date(logs[i].start)) / 86400000));
     }
     const avg = Math.round(diffs.reduce((a, b) => a + b, 0) / diffs.length);
-    const next = addDays(logs[0].start, avg);
+    const next = addDays(logs[logs.length - 1].start, avg);
     const daysLeft = Math.round((new Date(next + 'T12:00:00') - new Date(todayStr() + 'T12:00:00')) / 86400000);
     predHtml = '<div class="info-box">📅 ပျမ်းမျှ စက်ဝန်း: <b>' + avg + ' ရက်</b><br>' +
       'နောက်တစ်ကြိမ် ခန့်မှန်း: <b>' + fmtDateMm(next) + '</b>' +
