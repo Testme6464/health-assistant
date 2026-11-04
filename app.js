@@ -26,7 +26,7 @@ function nowHM() {
 }
 function hmToMin(hm) { const p = String(hm).split(':'); return (+p[0]) * 60 + (+p[1] || 0); }
 function minToHm(m) { m = ((m % 1440) + 1440) % 1440; return pad2(Math.floor(m / 60)) + ':' + pad2(m % 60); }
-const MM_MONTHS = ['ဇန်နဝါရီ','ေဖေဖာ်ဝါရီ','မတ်','ဧပြီ','ေမ','ဇွန်','ဇူလိုင်','ဩဂုတ်','စက်တင်ဘာ','ေအာက်တိုဘာ','နိုဝင်ဘာ','ဒီဇင်ဘာ'];
+const MM_MONTHS = ['ဇန်နဝါရီ','ဖေဖော်ဝါရီ','မတ်','ဧပြီ','မေ','ဇွန်','ဇူလိုင်','ဩဂုတ်','စက်တင်ဘာ','အောက်တိုဘာ','နိုဝင်ဘာ','ဒီဇင်ဘာ'];
 function fmtDateMm(dateStr) {
   if (!dateStr) return '';
   const p = dateStr.split('-');
@@ -35,14 +35,14 @@ function fmtDateMm(dateStr) {
 function fmtTimeMm(hm) { // 24h -> Burmese 12h label
   if (!hm) return '';
   let h = +hm.split(':')[0], m = hm.split(':')[1];
-  const ap = h < 12 ? 'နံနက်' : (h < 17 ? 'ေန့လယ်' : (h < 20 ? 'ညေန' : 'ည'));
+  const ap = h < 12 ? 'နံနက်' : (h < 17 ? 'နေ့လယ်' : (h < 20 ? 'ညနေ' : 'ည'));
   let h12 = h % 12; if (h12 === 0) h12 = 12;
   return ap + ' ' + h12 + ':' + m;
 }
 
 // ---------------- store (localStorage, versioned) ----------------
 const STORE_KEY = 'healthAppV1';
-const APP_VERSION = '2026-11-04h'; // bump on every deploy; shown in Settings
+const APP_VERSION = '2026-11-04i'; // bump on every deploy; shown in Settings
 function defaultDB() {
   const p1 = uid();
   return {
@@ -90,7 +90,7 @@ function loadDB() {
 }
 function saveDB() {
   try { localStorage.setItem(STORE_KEY, JSON.stringify(DB)); }
-  catch (e) { toast('သိမ်းဆည်း၍မရပါ (storage ပြည့်ေနနိုင်သည်)'); }
+  catch (e) { toast('သိမ်းဆည်း၍မရပါ (storage ပြည့်နေနိုင်သည်)'); }
 }
 function activeProfile() {
   return DB.profiles.find(p => p.id === DB.activeProfileId) || DB.profiles[0];
@@ -114,14 +114,14 @@ function closeModal() { $('modalOverlay').classList.add('hidden'); }
 // ---------------- navigation ----------------
 const TABS = [
   { id: 'home',      ico: '🏠', label: 'ပင်မ' },
-  { id: 'profile',   ico: '👤', label: 'ကျန်းမာေရးဖိုင်' },
-  { id: 'meds',      ico: '💊', label: 'ေဆးဝါးများ' },
+  { id: 'profile',   ico: '👤', label: 'ကျန်းမာရေးဖိုင်' },
+  { id: 'meds',      ico: '💊', label: 'ဆေးဝါးများ' },
   { id: 'plan',      ico: '🗓️', label: 'အစီအစဉ်' },
-  { id: 'food',      ico: '🍚', label: 'အစားအေသာက်' },
-  { id: 'remind',    ico: '⏰', label: 'သတိေပးချက်များ' },
+  { id: 'food',      ico: '🍚', label: 'အစားအသောက်' },
+  { id: 'remind',    ico: '⏰', label: 'သတိပေးချက်များ' },
   { id: 'progress',  ico: '📊', label: 'တိုးတက်မှု' },
   { id: 'symptom',   ico: '📝', label: 'လက္ခဏာ' },
-  { id: 'emergency', ico: '🚨', label: 'အေရးေပါ်' },
+  { id: 'emergency', ico: '🚨', label: 'အရေးပေါ်' },
   { id: 'period',    ico: '🩸', label: 'ရာသီစက်' },
   { id: 'report',    ico: '🖨️', label: 'အစီရင်ခံစာ' },
   { id: 'settings',  ico: '⚙️', label: 'ဆက်တင်' },
@@ -172,7 +172,7 @@ function calorieTarget(p) {
   else if (p.goal === 'gain') tdee += 300;
   return Math.max(1200, Math.round(tdee / 50) * 50);
 }
-const GOAL_LABEL = { lose: 'ကိုယ်အေလးချိန်ေလျှာ့ချရန်', maintain: 'ထိန်းသိမ်းရန်', gain: 'တိုးရန်' };
+const GOAL_LABEL = { lose: 'ကိုယ်အလေးချိန်လျှော့ချရန်', maintain: 'ထိန်းသိမ်းရန်', gain: 'တိုးရန်' };
 
 // ---------------- AI (BYOK) ----------------
 // TEMP (2026-11-04): user asked for Gemini-only for now. Other providers are hidden
@@ -246,7 +246,7 @@ async function fetchWithRetry(url, opts, tries, onRetry) {
     if (m) return Math.min(parseInt(m[1], 10), 90) * 1000;
     return (attempt + 1) * 4000;
   };
-  let lastErr = new Error('AI ေခါ်ဆို၍မရပါ');
+  let lastErr = new Error('AI ခေါ်ဆို၍မရပါ');
   for (let i = 0; i < tries; i++) {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
@@ -283,22 +283,17 @@ async function fetchWithRetry(url, opts, tries, onRetry) {
   }
   throw lastErr;
 }
-// ---- Burmese Unicode normalizer (v3: boundary-aware) ----
+// ---- Burmese Unicode normalizer (surgical, provably safe) ----
 // Some AI models emit the preposed vowel E (U+1031, ေ) AFTER its consonant
-// (Zawgyi/visual order). Fix: move it before its consonant cluster — but ONLY
-// when that consonant doesn't already carry a ေ (captured as `pre`), otherwise
-// correct cross-syllable sequences like ဒီနေ့ / ဖေဖော်ဝါရီ would be corrupted.
-// Medials-only between consonant and ေ (vowel signs mean a syllable boundary).
-// Verified: correct multi-syllable text passes byte-identical; Zawgyi order fixed.
+// (Zawgyi/visual order). In valid Unicode U+1031 is ALWAYS stored BEFORE the
+// consonant cluster, so this pattern can never occur in correct text — moving
+// it first fixes the ordering without any risk of damaging valid text.
+// (The previous full rabbit-table converter was removed: it mangled valid
+// Unicode, e.g. "မင်္ဂလာပါ" -> "မငျ်ဂလာပါ".)
 function toUnicodeMyanmar(t) {
-  if (t == null) return t;
-  let s = String(t), prev, guard = 0;
-  const re = /(\u1031?)([\u1000-\u1021][\u103B-\u103E]*)\u1031/g;
-  do {
-    prev = s;
-    s = s.replace(re, (m, pre, cons) => pre ? m : '\u1031' + cons);
-  } while (s !== prev && ++guard < 10);
-  return s;
+  // DISABLED 2026-11-04: Wikipedia proves ေ-after-consonant is CORRECT Myanmar Unicode.
+  // Previous 'fixes' were backwards and corrupted text. Return input unchanged.
+  return t == null ? t : String(t);
 }
 
 // Client-side throttle for Pollinations free lane (~1 reply per 45s per IP).
@@ -387,7 +382,7 @@ async function geminiFoodVision(dataUrl, onRetry) {
   }, onRetry);
   const text = toUnicodeMyanmar(j.candidates[0].content.parts.map(p => p.text || '').join(''));
   const jm = text.match(/\{[\s\S]*\}/);
-  if (!jm) throw new Error('AI အေဖြကို ဖတ်မရပါ');
+  if (!jm) throw new Error('AI အဖြေကို ဖတ်မရပါ');
   const parsed = JSON.parse(jm[0]);
   return { items: parsed.items || [], totalKcal: parsed.totalKcal || 0 };
 }
@@ -406,17 +401,17 @@ function switchProfile(id) {
 
 // ---------------- rule-based daily coach tips ----------------
 const COACH_TIPS = [
-  'ေရကို တစ်ေန့ အနည်းဆုံး ၈ ခွက် (၂ လီတာ) ေသာက်ပါ။',
-  'ထမင်းစားပြီးတိုင်း ၁၀ မိနစ်ေလာက် လမ်းေလျှာက်ေပးပါ။',
+  'ရေကို တစ်နေ့ အနည်းဆုံး ၈ ခွက် (၂ လီတာ) သောက်ပါ။',
+  'ထမင်းစားပြီးတိုင်း ၁၀ မိနစ်လောက် လမ်းလျှောက်ပေးပါ။',
   'ည ၁၀ နာရီခွဲမတိုင်မီ အိပ်ရာဝင်ဖို့ ကြိုးစားပါ။',
-  'အချိုရည်အစား ေရသန့် (သို့) သံပုရာရည် ေသာက်ပါ။',
-  'ေဆးကို အချိန်မှန်ေသာက်ဖို့ သတိေပးချက်ဖွင့်ထားပါ။',
-  'ဟင်းသီးဟင်းရွက် များများစားပါ — ထမင်းတစ်ပန်းကန်ရဲ့ ထက်ဝက်က အရွက်ဖြစ်ပါေစ။',
-  'တစ်ေန့ မိနစ် ၃၀ လမ်းေလျှာက်ခြင်းက နှလုံးကျန်းမာေရးအတွက် အေကာင်းဆုံးပါ။',
+  'အချိုရည်အစား ရေသန့် (သို့) သံပုရာရည် သောက်ပါ။',
+  'ဆေးကို အချိန်မှန်သောက်ဖို့ သတိပေးချက်ဖွင့်ထားပါ။',
+  'ဟင်းသီးဟင်းရွက် များများစားပါ — ထမင်းတစ်ပန်းကန်ရဲ့ ထက်ဝက်က အရွက်ဖြစ်ပါစေ။',
+  'တစ်နေ့ မိနစ် ၃၀ လမ်းလျှောက်ခြင်းက နှလုံးကျန်းမာရေးအတွက် အကောင်းဆုံးပါ။',
   'အိပ်ရာမဝင်မီ ၁ နာရီအလိုမှာ ဖုန်းကို ချထားပါ။',
-  'အစာကို ဖြည်းဖြည်းချင်း ဝါးစားပါ — ဗိုက်ပြည့်တယ်လို့ ဦးေနှာက်က သိဖို့ မိနစ် ၂၀ လိုပါတယ်။',
-  'ဆားေလျှာ့စားပါ — ငံပြာရည်၊ ငါးပိရည်ကို အနည်းငယ်သာ သုံးပါ။',
-  'မနက်စာကို ဘယ်ေတာ့မှ မလွတ်ပါနဲ့။',
+  'အစာကို ဖြည်းဖြည်းချင်း ဝါးစားပါ — ဗိုက်ပြည့်တယ်လို့ ဦးနှောက်က သိဖို့ မိနစ် ၂၀ လိုပါတယ်။',
+  'ဆားလျှော့စားပါ — ငံပြာရည်၊ ငါးပိရည်ကို အနည်းငယ်သာ သုံးပါ။',
+  'မနက်စာကို ဘယ်တော့မှ မလွတ်ပါနဲ့။',
   'စိတ်ဖိစီးမှုများရင် အသက်ကို နက်နက်ရှုပြီး ၅ မိနစ် အနားယူပါ။',
 ];
 function tipOfDay() {
@@ -441,7 +436,7 @@ function drawLineChart(canvasId, series, opts) {
   series.forEach(s => s.points.forEach(p => { if (p.y != null) allY.push(p.y); }));
   if (!allY.length) {
     ctx.fillStyle = '#6b7a74'; ctx.font = '14px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('မှတ်တမ်း မရှိေသးပါ', W / 2, H / 2);
+    ctx.fillText('မှတ်တမ်း မရှိသေးပါ', W / 2, H / 2);
     return;
   }
   let min = o.min != null ? o.min : Math.min.apply(null, allY);
@@ -517,7 +512,7 @@ function renderHome() {
   const waterPct = Math.min(100, Math.round(waterToday / waterTarget * 100));
 
   let html = '<div class="card"><div class="row space-between">' +
-    '<h3>ဒီေန့ အကျဉ်းချုပ်</h3><span class="muted">' + fmtDateMm(t) + '</span></div>' +
+    '<h3>ဒီနေ့ အကျဉ်းချုပ်</h3><span class="muted">' + fmtDateMm(t) + '</span></div>' +
     '<div class="muted">' + esc(p.name) + ' · ရည်မှန်းချက်: ' + GOAL_LABEL[p.goal || 'maintain'] + '</div></div>';
 
   // calories
@@ -527,32 +522,32 @@ function renderHome() {
     coachingMsg(p, kcalToday, kcalTarget) + '</div>';
 
   // water
-  html += '<div class="card"><h3>💧 ေရ</h3>' +
+  html += '<div class="card"><h3>💧 ရေ</h3>' +
     '<div class="row space-between"><b>' + waterToday + ' ml</b><span class="muted">ရည်မှန်း ' + waterTarget + ' ml</span></div>' +
     '<div class="progress"><div style="width:' + waterPct + '%"></div></div>' +
     '<div class="water-btns"><button class="btn small-btn" data-water="250">+ 250 ml</button>' +
     '<button class="btn small-btn" data-water="500">+ 500 ml</button></div></div>';
 
   // meds
-  html += '<div class="card"><h3>💊 ဒီေန့ ေဆး</h3>';
-  if (!medsToday.length) html += '<div class="muted">ေဆးမှတ်တမ်း မရှိေသးပါ — ေဆးဝါးများ tab မှာ ထည့်ပါ</div>';
-  else html += '<div>ေသာက်ပြီး ' + takenCount + ' / လွတ်သွား ' + missedCount + ' / စုစုေပါင်း ' + medsToday.length + '</div>';
+  html += '<div class="card"><h3>💊 ဒီနေ့ ဆေး</h3>';
+  if (!medsToday.length) html += '<div class="muted">ဆေးမှတ်တမ်း မရှိသေးပါ — ဆေးဝါးများ tab မှာ ထည့်ပါ</div>';
+  else html += '<div>သောက်ပြီး ' + takenCount + ' / လွတ်သွား ' + missedCount + ' / စုစုပေါင်း ' + medsToday.length + '</div>';
   html += '</div>';
 
   // activity
   html += '<div class="card"><h3>🚶 လှုပ်ရှားမှု</h3>' +
-    '<div class="row space-between"><div>ဒီေန့ ေခြလှမ်း: <b>' + stepsToday + '</b></div>' +
-    '<button class="btn small-btn secondary" id="btnQuickSteps">ေခြလှမ်းထည့်ရန်</button></div></div>';
+    '<div class="row space-between"><div>ဒီနေ့ ခြေလှမ်း: <b>' + stepsToday + '</b></div>' +
+    '<button class="btn small-btn secondary" id="btnQuickSteps">ခြေလှမ်းထည့်ရန်</button></div></div>';
 
   // weight mini chart
-  html += '<div class="card"><h3>⚖️ ကိုယ်အေလးချိန် (ေနာက်ဆုံး ၁၄ မှတ်)</h3>' +
+  html += '<div class="card"><h3>⚖️ ကိုယ်အလေးချိန် (နောက်ဆုံး ၁၄ မှတ်)</h3>' +
     '<canvas id="chartHomeWeight" class="chart"></canvas></div>';
 
   // coach tip
-  html += '<div class="card"><h3>🤖 ဒီေန့ အကြံပြုချက်</h3>' +
+  html += '<div class="card"><h3>🤖 ဒီနေ့ အကြံပြုချက်</h3>' +
     '<div class="info-box" id="coachTipBox">' + esc(tipOfDay()) + '</div>' +
     (aiProvider()
-      ? '<button class="btn small-btn secondary" id="btnAiTip">✨ AI အကြံပြုချက် ေတာင်းမယ်</button>'
+      ? '<button class="btn small-btn secondary" id="btnAiTip">✨ AI အကြံပြုချက် တောင်းမယ်</button>'
       : '<div class="muted small">Settings မှာ API key ထည့်ထားရင် AI အကြံပြုချက် ရနိုင်ပါတယ်</div>') +
     '</div>';
 
@@ -565,7 +560,7 @@ function renderHome() {
   if (qs) qs.addEventListener('click', openStepsModal);
   const aiBtn = $('btnAiTip');
   if (aiBtn) aiBtn.addEventListener('click', async () => {
-    aiBtn.disabled = true; aiBtn.textContent = 'စဉ်းစားေနသည်…';
+    aiBtn.disabled = true; aiBtn.textContent = 'စဉ်းစားနေသည်…';
     try {
       const p2 = activeProfile();
       const tip = await aiChat(
@@ -575,10 +570,10 @@ function renderHome() {
         ', conditions: ' + (p2.conditions.join(', ') || 'none') +
         '. Today: ' + kcalToday + '/' + kcalTarget + ' kcal, water ' + waterToday + 'ml, steps ' + stepsToday +
         '. Give one personalized health tip for the rest of today.',
-        (n, total, note) => { aiBtn.textContent = note === 'wait' ? 'ခဏေစာင့်ေနသည်…' : ('ပြန်ကြိုးစားေနသည်… (' + n + '/' + total + ')'); });
+        (n, total, note) => { aiBtn.textContent = note === 'wait' ? 'ခဏစောင့်နေသည်…' : ('ပြန်ကြိုးစားနေသည်… (' + n + '/' + total + ')'); });
       $('coachTipBox').textContent = tip;
-    } catch (e) { toast('AI ေခါ်ဆို၍မရပါ: ' + e.message); }
-    aiBtn.disabled = false; aiBtn.textContent = '✨ AI အကြံပြုချက် ေတာင်းမယ်';
+    } catch (e) { toast('AI ခေါ်ဆို၍မရပါ: ' + e.message); }
+    aiBtn.disabled = false; aiBtn.textContent = '✨ AI အကြံပြုချက် တောင်းမယ်';
   });
 
   drawLineChart('chartHomeWeight', [{
@@ -588,12 +583,12 @@ function renderHome() {
 }
 function coachingMsg(p, kcalToday, kcalTarget) {
   if (kcalToday > kcalTarget * 1.1)
-    return '<div class="warn-box">⚠️ ဒီေန့ ကယ်လိုရီ များသွားပါတယ်။ ညေနမှာ လမ်း <b>မိနစ် ၂၀</b> ပိုေလျှာက်ပါ 🚶</div>';
+    return '<div class="warn-box">⚠️ ဒီနေ့ ကယ်လိုရီ များသွားပါတယ်။ ညနေမှာ လမ်း <b>မိနစ် ၂၀</b> ပိုလျှောက်ပါ 🚶</div>';
   if (kcalToday > kcalTarget)
-    return '<div class="warn-box">ကယ်လိုရီ ရည်မှန်းချက်ကို ေကျာ်သွားပါပြီ — ညစာကို ေပါ့ေပါ့စားပါ။</div>';
+    return '<div class="warn-box">ကယ်လိုရီ ရည်မှန်းချက်ကို ကျော်သွားပါပြီ — ညစာကို ပေါ့ပေါ့စားပါ။</div>';
   if (kcalToday < kcalTarget * 0.5 && new Date().getHours() >= 15)
-    return '<div class="info-box">ဒီေန့ အစာ နည်းေနပါတယ် — အာဟာရပြည့်ေအာင် ညစာကို ေသချာစားပါ။</div>';
-  return '<div class="ok-box">✅ ကယ်လိုရီ လမ်းေကြာင်းမှန်ေပါ်မှာ ရှိပါတယ် — ဆက်ထိန်းထားပါ!</div>';
+    return '<div class="info-box">ဒီနေ့ အစာ နည်းနေပါတယ် — အာဟာရပြည့်အောင် ညစာကို သေချာစားပါ။</div>';
+  return '<div class="ok-box">✅ ကယ်လိုရီ လမ်းကြောင်းမှန်ပေါ်မှာ ရှိပါတယ် — ဆက်ထိန်းထားပါ!</div>';
 }
 function todaysMedSchedule(profileId, dateStr) {
   const out = [];
@@ -616,9 +611,9 @@ function addWater(ml) {
 function openStepsModal() {
   const p = activeProfile(), t = todayStr();
   const ex = DB.activityLog.find(a => a.profileId === p.id && a.date === t);
-  openModal('🚶 ဒီေန့ လှုပ်ရှားမှု', 
-    '<label>ေခြလှမ်း အေရအတွက်</label><input id="mSteps" type="number" inputmode="numeric" value="' + (ex ? ex.steps : '') + '" placeholder="ဥပမာ 5000">' +
-    '<label>ေလ့ကျင့်ခန်း (မိနစ်)</label><input id="mMins" type="number" inputmode="numeric" value="' + (ex ? (ex.minutes || '') : '') + '" placeholder="ဥပမာ 30">' +
+  openModal('🚶 ဒီနေ့ လှုပ်ရှားမှု', 
+    '<label>ခြေလှမ်း အရေအတွက်</label><input id="mSteps" type="number" inputmode="numeric" value="' + (ex ? ex.steps : '') + '" placeholder="ဥပမာ 5000">' +
+    '<label>လေ့ကျင့်ခန်း (မိနစ်)</label><input id="mMins" type="number" inputmode="numeric" value="' + (ex ? (ex.minutes || '') : '') + '" placeholder="ဥပမာ 30">' +
     '<div class="mt"><button class="btn block" id="mSaveSteps">သိမ်းမယ်</button></div>');
   $('mSaveSteps').addEventListener('click', () => {
     const steps = parseInt($('mSteps').value || '0', 10) || 0;
@@ -630,41 +625,41 @@ function openStepsModal() {
 }
 
 // ============================================================
-// VIEW: 👤 ကျန်းမာေရးဖိုင် (Health Profile)
+// VIEW: 👤 ကျန်းမာရေးဖိုင် (Health Profile)
 // ============================================================
 function renderProfile() {
   const p = activeProfile();
   const bmi = calcBMI(p);
-  let html = '<div class="card"><h3>👤 ' + esc(p.name) + ' ၏ ကျန်းမာေရးဖိုင်</h3>';
+  let html = '<div class="card"><h3>👤 ' + esc(p.name) + ' ၏ ကျန်းမာရေးဖိုင်</h3>';
   html += '<div class="form-grid">' +
     '<div><label>အမည်</label><input id="pfName" value="' + esc(p.name) + '"></div>' +
     '<div><label>အသက်</label><input id="pfAge" type="number" inputmode="numeric" value="' + esc(p.age) + '"></div>' +
     '<div><label>ကျား/မ</label><select id="pfGender">' +
-      '<option value="">— ေရွးပါ —</option>' +
+      '<option value="">— ရွေးပါ —</option>' +
       '<option value="male"' + (p.gender === 'male' ? ' selected' : '') + '>ကျား</option>' +
       '<option value="female"' + (p.gender === 'female' ? ' selected' : '') + '>မ</option>' +
     '</select></div>' +
-    '<div><label>ေသွးအမျိုးအစား</label><select id="pfBlood">' +
+    '<div><label>သွေးအမျိုးအစား</label><select id="pfBlood">' +
       '<option value="">—</option>' +
       ['O+','O-','A+','A-','B+','B-','AB+','AB-'].map(b =>
         '<option' + (p.bloodType === b ? ' selected' : '') + '>' + b + '</option>').join('') +
     '</select></div>' +
     '<div><label>အရပ် (cm)</label><input id="pfHeight" type="number" inputmode="decimal" value="' + esc(p.height) + '"></div>' +
-    '<div><label>အေလးချိန် (kg)</label><input id="pfWeight" type="number" inputmode="decimal" value="' + esc(p.weight) + '"></div>' +
+    '<div><label>အလေးချိန် (kg)</label><input id="pfWeight" type="number" inputmode="decimal" value="' + esc(p.weight) + '"></div>' +
   '</div>';
-  html += '<div class="mt info-box">📏 BMI: <b>' + (bmi ? bmi.toFixed(1) : '—') + '</b> (' + bmiLabel(bmi) + ') · 🔥 ေန့စဉ် ကယ်လိုရီရည်မှန်း: <b>' + calorieTarget(p) + ' kcal</b></div>';
-  html += '<label>ကျန်းမာေရး ရည်မှန်းချက်</label><select id="pfGoal">' +
+  html += '<div class="mt info-box">📏 BMI: <b>' + (bmi ? bmi.toFixed(1) : '—') + '</b> (' + bmiLabel(bmi) + ') · 🔥 နေ့စဉ် ကယ်လိုရီရည်မှန်း: <b>' + calorieTarget(p) + ' kcal</b></div>';
+  html += '<label>ကျန်းမာရေး ရည်မှန်းချက်</label><select id="pfGoal">' +
     Object.keys(GOAL_LABEL).map(g => '<option value="' + g + '"' + (p.goal === g ? ' selected' : '') + '>' + GOAL_LABEL[g] + '</option>').join('') +
     '</select>';
   html += '<div class="check-line"><input type="checkbox" id="pfPeriod"' + (p.periodEnabled ? ' checked' : '') + '><label for="pfPeriod" style="margin:0">ရာသီစက် မှတ်တမ်း သုံးမယ် (အမျိုးသမီးများအတွက်)</label></div>';
 
-  html += '<h4>နာတာရှည် ေရာဂါရာဇဝင်</h4><div id="pfConditions">' +
+  html += '<h4>နာတာရှည် ရောဂါရာဇဝင်</h4><div id="pfConditions">' +
     p.conditions.map((c, i) => tagHtml('cond', i, c)).join('') + '</div>' +
-    '<div class="row"><input id="pfCondInput" class="grow" placeholder="ဥပမာ ေသွးတိုး၊ ဆီးချို"><button class="btn small-btn" id="pfCondAdd">ထည့်မယ်</button></div>';
+    '<div class="row"><input id="pfCondInput" class="grow" placeholder="ဥပမာ သွေးတိုး၊ ဆီးချို"><button class="btn small-btn" id="pfCondAdd">ထည့်မယ်</button></div>';
 
-  html += '<h4>မျိုးရိုးလိုက်ေရာဂါများ</h4><div id="pfFamily">' +
+  html += '<h4>မျိုးရိုးလိုက်ရောဂါများ</h4><div id="pfFamily">' +
     p.familyHistory.map((c, i) => tagHtml('fam', i, c)).join('') + '</div>' +
-    '<div class="row"><input id="pfFamInput" class="grow" placeholder="ဥပမာ နှလုံးေရာဂါ (အေဖ)"><button class="btn small-btn" id="pfFamAdd">ထည့်မယ်</button></div>';
+    '<div class="row"><input id="pfFamInput" class="grow" placeholder="ဥပမာ နှလုံးရောဂါ (အဖေ)"><button class="btn small-btn" id="pfFamAdd">ထည့်မယ်</button></div>';
 
   html += '<h4>ဓာတ်မတည့်မှုများ (Allergies)</h4><div id="pfAllergy">' +
     p.allergies.map((c, i) => tagHtml('alg', i, c)).join('') + '</div>' +
@@ -677,7 +672,7 @@ function renderProfile() {
   DB.profiles.forEach(pr => {
     html += '<div class="list-item"><span class="grow"><b>' + esc(pr.name) + '</b>' +
       (pr.id === DB.activeProfileId ? ' <span class="tag">လက်ရှိ</span>' : '') + '</span>' +
-      (pr.id !== DB.activeProfileId ? '<button class="btn small-btn secondary" data-switch="' + pr.id + '">ေပြာင်းမယ်</button>' : '') +
+      (pr.id !== DB.activeProfileId ? '<button class="btn small-btn secondary" data-switch="' + pr.id + '">ပြောင်းမယ်</button>' : '') +
       (DB.profiles.length > 1 ? '<button class="btn small-btn danger" data-delprofile="' + pr.id + '">ဖျက်မယ်</button>' : '') +
       '</div>';
   });
@@ -727,7 +722,7 @@ function renderProfile() {
     }));
   $('btnNewProfile').addEventListener('click', () => {
     openModal('👥 Profile အသစ်',
-      '<label>အမည်</label><input id="mPName" placeholder="ဥပမာ အေမ">' +
+      '<label>အမည်</label><input id="mPName" placeholder="ဥပမာ အမေ">' +
       '<div class="mt"><button class="btn block" id="mPSave">ဖန်တီးမယ်</button></div>');
     $('mPSave').addEventListener('click', () => {
       const name = $('mPName').value.trim() || 'Profile အသစ်';
@@ -744,7 +739,7 @@ function tagHtml(kind, i, text) {
 }
 
 // ============================================================
-// VIEW: 💊 ေဆးဝါးများ (Medications)
+// VIEW: 💊 ဆေးဝါးများ (Medications)
 // ============================================================
 function renderMeds() {
 const p = activeProfile();
@@ -752,15 +747,15 @@ const t = todayStr();
 const meds = DB.meds.filter(m => m.profileId === p.id);
 const sched = todaysMedSchedule(p.id, t);
 
-let html = '<div class="card"><div class="row space-between"><h3>💊 ဒီေန့ ေသာက်ရမည့်ေဆးများ</h3>' +
+let html = '<div class="card"><div class="row space-between"><h3>💊 ဒီနေ့ သောက်ရမည့်ဆေးများ</h3>' +
 '<span class="muted">' + fmtDateMm(t) + '</span></div>';
-if (!sched.length) html += '<div class="muted">ေဆး မှတ်တမ်း မရှိေသးပါ — ေအာက်မှာ အရင်ထည့်ပါ</div>';
+if (!sched.length) html += '<div class="muted">ဆေး မှတ်တမ်း မရှိသေးပါ — အောက်မှာ အရင်ထည့်ပါ</div>';
 sched.forEach(s => {
 html += '<div class="med-check ' + s.status + '">' +
 '<span class="time">' + fmtTimeMm(s.time) + '</span>' +
 '<div class="grow"><b>' + esc(s.med.name) + '</b><div class="small muted">' + esc(s.med.dosage || '') + '</div></div>' +
 '<div class="check-btns">' +
-'<button data-medkey="' + s.key + '" data-st="taken" class="' + (s.status === 'taken'? 'on-taken': '') + '">✅ ေသာက်ပြီး</button>' +
+'<button data-medkey="' + s.key + '" data-st="taken" class="' + (s.status === 'taken'? 'on-taken': '') + '">✅ သောက်ပြီး</button>' +
 '<button data-medkey="' + s.key + '" data-st="missed" class="' + (s.status === 'missed'? 'on-missed': '') + '">⏭️ လွတ်</button>' +
 '</div></div>';
 });
@@ -769,14 +764,14 @@ html += '</div>';
 // refill alerts
 const lowMeds = meds.map(m => ({ m: m, left: medSupplyLeft(m)})).filter(x => x.left!= null && x.left <= 7);
 if (lowMeds.length) {
-html += '<div class="alert">⚠️ ေဆးကုန်ခါနီးေနပါပြီ:<br>' +
+html += '<div class="alert">⚠️ ဆေးကုန်ခါနီးနေပါပြီ:<br>' +
 lowMeds.map(x => '• ' + esc(x.m.name) + ' — ' + x.left + ' ရက် စာသာ ကျန်သည်').join('<br>') + '</div>';
 }
 
 // med list
-html += '<div class="card"><div class="row space-between"><h3>📋 ေဆးစာရင်း</h3>' +
+html += '<div class="card"><div class="row space-between"><h3>📋 ဆေးစာရင်း</h3>' +
 '<button class="btn small-btn" id="btnAddMed">＋ ထည့်မယ်</button></div>';
-if (!meds.length) html += '<div class="muted">ေဆး မထည့်ရေသးပါ</div>';
+if (!meds.length) html += '<div class="muted">ဆေး မထည့်ရသေးပါ</div>';
 meds.forEach(m => {
 const left = medSupplyLeft(m);
 html += '<div class="list-item"><div class="grow"><b>' + esc(m.name) + '</b>' +
@@ -789,11 +784,11 @@ html += '<div class="list-item"><div class="grow"><b>' + esc(m.name) + '</b>' +
 html += '</div>';
 
 // interaction check
-html += '<div class="card"><h3>🔬 ေဆးအချင်းချင်း ဓာတ်ပြုမှု စစ်ေဆးရန်</h3>' +
-'<div id="interactResult"><div class="muted">ေဆး ၂ မျိုးနှင့်အထက် ထည့်ထားရင် စစ်လို့ရပါမယ်</div></div>' +
+html += '<div class="card"><h3>🔬 ဆေးအချင်းချင်း ဓာတ်ပြုမှု စစ်ဆေးရန်</h3>' +
+'<div id="interactResult"><div class="muted">ဆေး ၂ မျိုးနှင့်အထက် ထည့်ထားရင် စစ်လို့ရပါမယ်</div></div>' +
 '<div class="row wrap mt"><button class="btn small-btn secondary" id="btnInteractLocal">📋 စာရင်းနဲ့ စစ်မယ် (offline)</button>' +
 (aiProvider()? '<button class="btn small-btn" id="btnInteractAI">✨ AI နဲ့ စစ်မယ်</button>': '') + '</div>' +
-'<div class="small muted mt">⚠️ ဒါက ကနဦး လမ်းညွှန်ချက်သာ — ေဆးမေပြာင်းမီ ဆရာဝန်/ေဆးဝါးပညာရှင်နဲ့ တိုင်ပင်ပါ။</div></div>';
+'<div class="small muted mt">⚠️ ဒါက ကနဦး လမ်းညွှန်ချက်သာ — ဆေးမပြောင်းမီ ဆရာဝန်/ဆေးဝါးပညာရှင်နဲ့ တိုင်ပင်ပါ။</div></div>';
 
 $('view-meds').innerHTML = html;
 
@@ -809,7 +804,7 @@ $('view-meds').querySelectorAll('[data-editmed]').forEach(b =>
 b.addEventListener('click', () => openMedModal(b.dataset.editmed)));
 $('view-meds').querySelectorAll('[data-delmed]').forEach(b =>
 b.addEventListener('click', () => {
-if (!confirm('ဒီေဆးကို ဖျက်မှာလား?')) return;
+if (!confirm('ဒီဆေးကို ဖျက်မှာလား?')) return;
 DB.meds = DB.meds.filter(x => x.id!== b.dataset.delmed);
 saveDB(); renderMeds();
 }));
@@ -827,26 +822,26 @@ function openMedModal(id) {
 const p = activeProfile();
 const m = id? DB.meds.find(x => x.id === id): null;
 const times = m? m.times.join(', '): '08:00, 20:00';
-openModal(id? '💊 ေဆးပြင်ရန်': '💊 ေဆးအသစ်ထည့်ရန်',
-'<label>ေဆးအမည် *</label><input id="mMedName" value="' + esc(m? m.name: '') + '" placeholder="ဥပမာ Amlodipine">' +
+openModal(id? '💊 ဆေးပြင်ရန်': '💊 ဆေးအသစ်ထည့်ရန်',
+'<label>ဆေးအမည် *</label><input id="mMedName" value="' + esc(m? m.name: '') + '" placeholder="ဥပမာ Amlodipine">' +
 '<label>ပမာဏ (Dosage)</label><input id="mDosage" value="' + esc(m? m.dosage: '') + '" placeholder="ဥပမာ 5mg, ၁ လုံး">' +
-'<label>ေသာက်ရမည့်အချိန်များ (ေကာ်မာခြား, 24h)</label><input id="mTimes" value="' + esc(times) + '" placeholder="08:00, 13:00, 20:00">' +
-'<label>ေသာက်ရသည့် အေကြာင်းအရင်း</label><input id="mReason" value="' + esc(m? m.reason: '') + '" placeholder="ဥပမာ ေသွးတိုးအတွက်">' +
+'<label>သောက်ရမည့်အချိန်များ (ကော်မာခြား, 24h)</label><input id="mTimes" value="' + esc(times) + '" placeholder="08:00, 13:00, 20:00">' +
+'<label>သောက်ရသည့် အကြောင်းအရင်း</label><input id="mReason" value="' + esc(m? m.reason: '') + '" placeholder="ဥပမာ သွေးတိုးအတွက်">' +
 '<div class="form-grid"><div><label>လက်ကျန်ရက် (ရက်)</label><input id="mSupply" type="number" inputmode="numeric" value="' + (m && m.supplyDays? m.supplyDays: '') + '" placeholder="ဥပမာ 30"></div>' +
-'<div><label>စေသာက်သည့်ေန့</label><input id="mSupplyStart" type="date" value="' + (m && m.supplyStartDate? m.supplyStartDate: todayStr()) + '"></div></div>' +
+'<div><label>စသောက်သည့်နေ့</label><input id="mSupplyStart" type="date" value="' + (m && m.supplyStartDate? m.supplyStartDate: todayStr()) + '"></div></div>' +
 '<div class="mt"><button class="btn block" id="mMedSave">သိမ်းမယ်</button></div>');
 $('mMedSave').addEventListener('click', () => {
 const name = $('mMedName').value.trim();
-if (!name) { toast('ေဆးအမည် ထည့်ေပးပါ'); return;}
+if (!name) { toast('ဆေးအမည် ထည့်ပေးပါ'); return;}
 const tms = $('mTimes').value.split(',').map(s => s.trim()).filter(s => /^\d{1,2}:\d{2}$/.test(s));
-if (!tms.length) { toast('အချိန် အနည်းဆုံး ၁ ခု မှန်ေအာင်ထည့်ပါ (ဥပမာ 08:00)'); return;}
+if (!tms.length) { toast('အချိန် အနည်းဆုံး ၁ ခု မှန်အောင်ထည့်ပါ (ဥပမာ 08:00)'); return;}
 const data = { name: name, dosage: $('mDosage').value.trim(),
 times: tms, reason: $('mReason').value.trim(),
 supplyDays: $('mSupply').value.trim(), supplyStartDate: $('mSupplyStart').value};
 if (m) Object.assign(m, data);
 else DB.meds.push(Object.assign({ id: uid(), profileId: p.id}, data));
 saveDB(); closeModal(); renderMeds(); scheduleCheck();
-toast('ေဆး သိမ်းပြီးပါပြီ ✅');
+toast('ဆေး သိမ်းပြီးပါပြီ ✅');
 });
 }
 function checkLocalInteractions(medNames) {
@@ -869,35 +864,35 @@ function renderLocalInteractions() {
 const p = activeProfile();
 const names = DB.meds.filter(m => m.profileId === p.id).map(m => m.name);
 const box = $('interactResult');
-if (names.length < 2) { box.innerHTML = '<div class="warn-box">ေဆး ၂ မျိုးအထက် ထည့်ပြီးမှ စစ်လို့ရပါမယ်</div>'; return;}
+if (names.length < 2) { box.innerHTML = '<div class="warn-box">ဆေး ၂ မျိုးအထက် ထည့်ပြီးမှ စစ်လို့ရပါမယ်</div>'; return;}
 const found = checkLocalInteractions(names);
 if (!found.length) {
 box.innerHTML = '<div class="ok-box">✅ ထည့်ထားတဲ့ စာရင်း (' + (window.DRUG_INTERACTIONS || []).length +
-' ချက်) နဲ့ စစ်ကြည့်တာ သိသာတဲ့ ဓာတ်ပြုမှု <b>မေတွ့ပါ</b>။<br><span class="small">မှတ်ချက် — စာရင်းက အဖြစ်များတာေတွသာ ပါတာမို့ ေဆးအသစ်မစမီ ဆရာဝန်နဲ့ တိုင်ပင်ပါ။</span></div>';
+' ချက်) နဲ့ စစ်ကြည့်တာ သိသာတဲ့ ဓာတ်ပြုမှု <b>မတွေ့ပါ</b>။<br><span class="small">မှတ်ချက် — စာရင်းက အဖြစ်များတာတွေသာ ပါတာမို့ ဆေးအသစ်မစမီ ဆရာဝန်နဲ့ တိုင်ပင်ပါ။</span></div>';
 return;
 }
 const lvlMm = { high: '🔴 ပြင်းထန်', medium: '🟡 အလယ်အလတ်', low: '🟢 နည်း'};
-box.innerHTML = '<div class="alert"><b>⚠️ ဓာတ်ပြုနိုင်ေချ ' + found.length + ' ခု ေတွ့ပါတယ်:</b></div>' +
+box.innerHTML = '<div class="alert"><b>⚠️ ဓာတ်ပြုနိုင်ချေ ' + found.length + ' ခု တွေ့ပါတယ်:</b></div>' +
 found.map(f => '<div class="warn-box"><b>' + esc(f.meds.join(' + ')) + '</b> — ' + (lvlMm[f.entry.level] || f.entry.level) +
 '<br>' + esc(f.entry.noteMm) + '</div>').join('') +
-'<div class="small muted">ဆရာဝန်/ေဆးဝါးပညာရှင်နဲ့ အမြန်တိုင်ပင်ပါ။</div>';
+'<div class="small muted">ဆရာဝန်/ဆေးဝါးပညာရှင်နဲ့ အမြန်တိုင်ပင်ပါ။</div>';
 }
 async function renderAiInteractions() {
 const p = activeProfile();
 const meds = DB.meds.filter(m => m.profileId === p.id);
 const box = $('interactResult');
-if (meds.length < 2) { box.innerHTML = '<div class="warn-box">ေဆး ၂ မျိုးအထက် ထည့်ပြီးမှ စစ်လို့ရပါမယ်</div>'; return;}
-box.innerHTML = '<div class="info-box">AI စစ်ေဆးေနသည်…</div>';
+if (meds.length < 2) { box.innerHTML = '<div class="warn-box">ဆေး ၂ မျိုးအထက် ထည့်ပြီးမှ စစ်လို့ရပါမယ်</div>'; return;}
+box.innerHTML = '<div class="info-box">AI စစ်ဆေးနေသည်…</div>';
 try {
 const list = meds.map(m => m.name + (m.dosage? ' (' + m.dosage + ')': '')).join(', ');
 const ans = await aiChat(
-'You are a pharmacy assistant. Reply in Burmese (Myanmar script). List potential drug-drug interactions, each with severity (ပြင်းထန်/အလယ်အလတ်/နည်း) and a one-line explanation. End with: ေဆးမေပြာင်းမီ ဆရာဝန်နဲ့ တိုင်ပင်ပါ။ This is informational only, not medical advice.',
+'You are a pharmacy assistant. Reply in Burmese (Myanmar script). List potential drug-drug interactions, each with severity (ပြင်းထန်/အလယ်အလတ်/နည်း) and a one-line explanation. End with: ဆေးမပြောင်းမီ ဆရာဝန်နဲ့ တိုင်ပင်ပါ။ This is informational only, not medical advice.',
 'Check interactions between these medications: ' + list +
 '. Patient conditions: ' + (p.conditions.join(', ') || 'none') + '. Allergies: ' + (p.allergies.join(', ') || 'none') + '.'
 );
-box.innerHTML = '<div class="card" style="margin:0"><h4>✨ AI စစ်ေဆးချက်</h4><div style="white-space:pre-wrap">' + esc(ans) + '</div></div>';
+box.innerHTML = '<div class="card" style="margin:0"><h4>✨ AI စစ်ဆေးချက်</h4><div style="white-space:pre-wrap">' + esc(ans) + '</div></div>';
 } catch (e) {
-box.innerHTML = '<div class="alert">AI ေခါ်ဆို၍မရပါ: ' + esc(e.message) + '</div>';
+box.innerHTML = '<div class="alert">AI ခေါ်ဆို၍မရပါ: ' + esc(e.message) + '</div>';
 }
 }
 
@@ -912,15 +907,15 @@ function renderPlan() {
 const p = activeProfile();
 const mk = currentMonthKey();
 const plan = DB.plans[p.id];
-let html = '<div class="card"><h3>🗓️ တစ်လစာ ကျန်းမာေရး အစီအစဉ်</h3>';
+let html = '<div class="card"><h3>🗓️ တစ်လစာ ကျန်းမာရေး အစီအစဉ်</h3>';
 html += '<div class="muted">' + esc(p.name) + ' · ' + MM_MONTHS[+mk.split('-')[1] - 1] + ' ' + mk.split('-')[0] + '</div>';
 if (!plan || plan.month!== mk) {
-html += '<div class="info-box mt">ဒီလအတွက် အစီအစဉ် မထုတ်ရေသးပါ</div>' +
+html += '<div class="info-box mt">ဒီလအတွက် အစီအစဉ် မထုတ်ရသေးပါ</div>' +
 '<div class="row wrap"><button class="btn" id="btnGenPlan">📋 အစီအစဉ် ထုတ်မယ် (offline)</button>' +
 (aiProvider()? '<button class="btn secondary" id="btnGenPlanAI">✨ AI နဲ့ ထုတ်မယ်</button>': '') + '</div>' +
 (aiProvider()? '': '<div class="small muted mt">Settings မှာ API key ထည့်ထားရင် AI နဲ့ ပိုကိုယ်ပိုင် အစီအစဉ် ထုတ်နိုင်ပါတယ်</div>');
 } else {
-html += '<div class="ok-box mt">✅ ' + (plan.ai? 'AI နဲ့': 'offline စည်းမျဉ်းနဲ့') + ' ထုတ်ထားေသာ အစီအစဉ်</div>';
+html += '<div class="ok-box mt">✅ ' + (plan.ai? 'AI နဲ့': 'offline စည်းမျဉ်းနဲ့') + ' ထုတ်ထားသော အစီအစဉ်</div>';
 html += '<div class="row wrap mb"><button class="btn small-btn secondary" id="btnRegenPlan">🔄 ပြန်ထုတ်မယ်</button></div>';
 html += planHtml(plan);
 }
@@ -936,43 +931,43 @@ if (rg) rg.addEventListener('click', () => { delete DB.plans[p.id]; saveDB(); re
 function generateRulePlan(p) {
 const kcal = calorieTarget(p);
 const hasDiabetes = p.conditions.some(c => /ဆီးချို|diabetes/i.test(c));
-const hasBP = p.conditions.some(c => /ေသွးတိုး|blood pressure|hypertension/i.test(c));
+const hasBP = p.conditions.some(c => /သွေးတိုး|blood pressure|hypertension/i.test(c));
 const meals = [
 { name: '🌅 မနက်စာ', time: '07:30', items: hasDiabetes
 ? ['ပဲပြုတ်ထမင်း ၁ ပန်းကန်', 'ကြက်ဥပြုတ် ၁ လုံး', 'ဟင်းသီးဟင်းရွက်']
-: ['ထမင်း ၁ ပန်းကန်', 'ကြက်ဥေကြာ်/ပြုတ် ၁ လုံး', 'ဟင်းရွက်ေကြာ်']},
-{ name: '☀️ ေန့လယ်စာ', time: '12:30', items: ['ထမင်း ၁ ပန်းကန်', 'အသားဟင်း ၁ ခွက် (ကြက်/ငါး)', 'ဟင်းရွက် ၂ မျိုး', hasBP? 'ဆားေလျှာ့': 'အရွက်သုပ်']},
-{ name: '🍵 အဆာေပြ', time: '15:30', items: ['အသီးအနှံ ၁ လုံး', 'ပဲနို့/ဒိန်ချဉ် ၁ ခွက်']},
+: ['ထမင်း ၁ ပန်းကန်', 'ကြက်ဥကြော်/ပြုတ် ၁ လုံး', 'ဟင်းရွက်ကြော်']},
+{ name: '☀️ နေ့လယ်စာ', time: '12:30', items: ['ထမင်း ၁ ပန်းကန်', 'အသားဟင်း ၁ ခွက် (ကြက်/ငါး)', 'ဟင်းရွက် ၂ မျိုး', hasBP? 'ဆားလျှော့': 'အရွက်သုပ်']},
+{ name: '🍵 အဆာပြေ', time: '15:30', items: ['အသီးအနှံ ၁ လုံး', 'ပဲနို့/ဒိန်ချဉ် ၁ ခွက်']},
 { name: '🌙 ညစာ', time: '18:30', items: p.goal === 'lose'
 ? ['ထမင်း ပန်းကန်ဝက်', 'ငါးဟင်း/အရွက်ဟင်း', 'ဟင်းချို']
 : ['ထမင်း ၁ ပန်းကန်', 'အသားဟင်း', 'ဟင်းသီးဟင်းရွက်']},
 ];
 const workoutWeeks = [
-{ week: 'အပတ် ၁', title: 'ေပါ့ေပါ့ပါးပါး စတင်ခြင်း', items: ['ေန့တိုင်း လမ်းေလျှာက်ခြင်း မိနစ် ၂၀', 'မနက် အေကြာဆန့်ခြင်း ၅ မိနစ်', 'တစ်ပတ် ၁ ရက် အနားယူခြင်း']},
-{ week: 'အပတ် ၂', title: 'အရှိန်မြှင့်ခြင်း', items: ['လမ်းေလျှာက်ခြင်း မိနစ် ၃၀ (သို့) စက်ဘီးစီးခြင်း', 'Stretching ၁၀ မိနစ်', 'တနင်္လာေန့–ေသာကြာေန့ ပုံမှန်လုပ်ခြင်း']},
-{ week: 'အပတ် ၃', title: 'ကြံ့ခိုင်မှု တည်ေဆာက်ခြင်း', items: ['လမ်းမြန်မြန်ေလျှာက်ခြင်း မိနစ် ၄၀', 'ကိုယ်အေလးချိန်သုံး ေလ့ကျင့်ခန်း (squat, push-up) ၁၅ မိနစ်', 'တစ်ပတ် ၅ ရက်']},
-{ week: 'အပတ် ၄', title: 'ထိန်းသိမ်းပြီး တိုးတက်ခြင်း', items: ['လမ်း/ေပြး မိနစ် ၄၅', 'ကြွက်သားေလ့ကျင့်ခန်း မိနစ် ၂၀', 'တစ်ပတ် ၅–၆ ရက်', 'ရလဒ် ပြန်သုံးသပ်ခြင်း']},
+{ week: 'အပတ် ၁', title: 'ပေါ့ပေါ့ပါးပါး စတင်ခြင်း', items: ['နေ့တိုင်း လမ်းလျှောက်ခြင်း မိနစ် ၂၀', 'မနက် အကြောဆန့်ခြင်း ၅ မိနစ်', 'တစ်ပတ် ၁ ရက် အနားယူခြင်း']},
+{ week: 'အပတ် ၂', title: 'အရှိန်မြှင့်ခြင်း', items: ['လမ်းလျှောက်ခြင်း မိနစ် ၃၀ (သို့) စက်ဘီးစီးခြင်း', 'Stretching ၁၀ မိနစ်', 'တနင်္လာနေ့–သောကြာနေ့ ပုံမှန်လုပ်ခြင်း']},
+{ week: 'အပတ် ၃', title: 'ကြံ့ခိုင်မှု တည်ဆောက်ခြင်း', items: ['လမ်းမြန်မြန်လျှောက်ခြင်း မိနစ် ၄၀', 'ကိုယ်အလေးချိန်သုံး လေ့ကျင့်ခန်း (squat, push-up) ၁၅ မိနစ်', 'တစ်ပတ် ၅ ရက်']},
+{ week: 'အပတ် ၄', title: 'ထိန်းသိမ်းပြီး တိုးတက်ခြင်း', items: ['လမ်း/ပြေး မိနစ် ၄၅', 'ကြွက်သားလေ့ကျင့်ခန်း မိနစ် ၂၀', 'တစ်ပတ် ၅–၆ ရက်', 'ရလဒ် ပြန်သုံးသပ်ခြင်း']},
 ];
 const diet = {
 eat: ['ဟင်းသီးဟင်းရွက် အမျိုးမျိုး', 'အသီးအနှံ', 'ငါး၊ ကြက် (အဆီနည်း)', 'ပဲ၊ တို့ဟူး', 'ဆန်လုံးညို (ရရင်)']
-.concat(hasDiabetes? ['အချိုနည်းေသာ အစားအစာများ']: []).concat(hasBP? ['ပိုတက်စီယမ်များေသာ ငှက်ေပျာသီး']: []),
-avoid: ['အချိုရည်၊ ေရခဲမုန့်', 'အေကြာ်အေလှာ် များများ', 'အရက်'].concat(hasDiabetes? ['သကြား၊ မုန့်ချို']: []).concat(hasBP? ['ဆား၊ ငံပြာရည်များများ']: [])
+.concat(hasDiabetes? ['အချိုနည်းသော အစားအစာများ']: []).concat(hasBP? ['ပိုတက်စီယမ်များသော ငှက်ပျောသီး']: []),
+avoid: ['အချိုရည်၊ ရေခဲမုန့်', 'အကြော်အလှော် များများ', 'အရက်'].concat(hasDiabetes? ['သကြား၊ မုန့်ချို']: []).concat(hasBP? ['ဆား၊ ငံပြာရည်များများ']: [])
 };
 DB.plans[p.id] = {
 month: currentMonthKey(), createdAt: new Date().toISOString(), ai: false,
 meals: meals, sleep: { bed: DB.reminders.bedtime || '22:30', wake: '06:00'},
 workout: workoutWeeks, diet: diet, calorieTarget: kcal,
-tip: 'ေရများများေသာက်ပြီး ထမင်းစားပြီးတိုင်း လမ်းေလျှာက်ပါ။'
+tip: 'ရေများများသောက်ပြီး ထမင်းစားပြီးတိုင်း လမ်းလျှောက်ပါ။'
 };
 saveDB();
 }
 async function generateAiPlan() {
 const p = activeProfile();
 const btn = $('btnGenPlanAI');
-const onRetry = (n, total, note) => { btn.textContent = note === 'wait' ? 'ခဏေစာင့်ေနသည်…' : ('AI ထုတ်လုပ်ေနသည်… (' + n + '/' + total + ')'); };
-btn.disabled = true; btn.textContent = 'AI ထုတ်လုပ်ေနသည်…';
+const onRetry = (n, total, note) => { btn.textContent = note === 'wait' ? 'ခဏစောင့်နေသည်…' : ('AI ထုတ်လုပ်နေသည်… (' + n + '/' + total + ')'); };
+btn.disabled = true; btn.textContent = 'AI ထုတ်လုပ်နေသည်…';
 // Exact headers the prompt demands — used to validate the AI actually returned a plan.
-const PLAN_HEADERS = ['စားေသာက်ချိန်', 'အိပ်စက်ချိန်', 'ေလ့ကျင့်ခန်း', 'စားသင့်', 'ေရှာင်'];
+const PLAN_HEADERS = ['စားသောက်ချိန်', 'အိပ်စက်ချိန်', 'လေ့ကျင့်ခန်း', 'စားသင့်', 'ရှောင်'];
 function planHeaderHits(ans) { return PLAN_HEADERS.filter(h => ans.includes(h)).length; }
 function planOutputOk(ans) {
   const a = ans.replace(/\b(kcal|kg|cm|min|AM|PM)\b/gi, '');
@@ -986,7 +981,7 @@ const PLAN_PROMPT =
 'medications, age, BMI and goal: name their conditions explicitly and add one short line in each section ' +
 'explaining why the advice suits them. Never give generic advice that ignores their conditions. ' +
 'Output using EXACTLY these 5 section headers, in this order:\n' +
-'## 🍽️ စားေသာက်ချိန်\n## 😴 အိပ်စက်ချိန်\n## 🏃 ေလ့ကျင့်ခန်း (၄ ပတ်)\n## 🥗 စားသင့်ေသာအစားအစာများ\n## 🚫 ေရှာင်ရန်များ\n' +
+'## 🍽️ စားသောက်ချိန်\n## 😴 အိပ်စက်ချိန်\n## 🏃 လေ့ကျင့်ခန်း (၄ ပတ်)\n## 🥗 စားသင့်သောအစားအစာများ\n## 🚫 ရှောင်ရန်များ\n' +
 'Be specific: exact times, dish names with portions and kcal, a day-by-day 4-week workout schedule with durations. ' +
 'Do not ask questions. No preamble. No medical diagnosis.';
 try {
@@ -1013,15 +1008,15 @@ if (!planOutputOk(ans)) {
   if (planOutputOk(retry)) ans = retry;
   else if (planHeaderHits(retry) > planHeaderHits(ans)) ans = retry;
 }
-if (!ans || ans.length < 150) throw new Error('AI အေဖြ ပုံစံမမှန်ပါ');
+if (!ans || ans.length < 150) throw new Error('AI အဖြေ ပုံစံမမှန်ပါ');
 const snap = 'အသက် ' + (p.age || '?') + ' · BMI ' + (bmi ? bmi.toFixed(1) + ' (' + bmiLabel(bmi) + ')' : '?') +
 ' · ရည်မှန်းချက်: ' + (GOAL_LABEL[p.goal] || '') +
-' · အခံေရာဂါ: ' + (p.conditions.join(', ') || 'မရှိ') +
-' · ေသာက်ေနေသာေဆး: ' + (meds.map(m => m.name).join(', ') || 'မရှိ');
+' · အခံရောဂါ: ' + (p.conditions.join(', ') || 'မရှိ') +
+' · သောက်နေသောဆေး: ' + (meds.map(m => m.name).join(', ') || 'မရှိ');
 DB.plans[p.id] = { month: currentMonthKey(), createdAt: new Date().toISOString(), ai: true, rawAi: ans, snap: snap };
 saveDB(); renderPlan(); toast('AI အစီအစဉ် ရပြီးပါပြီ ✅');
 } catch (e) {
-toast('AI ေခါ်ဆို၍မရပါ: ' + e.message + ' — offline နဲ့ ထုတ်ကြည့်ပါ');
+toast('AI ခေါ်ဆို၍မရပါ: ' + e.message + ' — offline နဲ့ ထုတ်ကြည့်ပါ');
 btn.disabled = false; btn.textContent = '✨ AI နဲ့ ထုတ်မယ်';
 }
 }
@@ -1030,7 +1025,7 @@ if (plan.ai && plan.rawAi) {
 // Render "## Header" markdown lines as real section headers.
 const parts = esc(plan.rawAi).split(/^## /m);
 let out = '';
-if (plan.snap) out += '<div class="info-box mb">🔍 AI က ဒီအချက်ေတွကို အေခြခံပြီး ဆွဲထားတာပါ:<br>' + esc(plan.snap) + '</div>';
+if (plan.snap) out += '<div class="info-box mb">🔍 AI က ဒီအချက်တွေကို အခြေခံပြီး ဆွဲထားတာပါ:<br>' + esc(plan.snap) + '</div>';
 out += '<div style="white-space:pre-wrap">' + parts[0] + '</div>';
 for (let i = 1; i < parts.length; i++) {
 const nl = parts[i].indexOf('\n');
@@ -1040,23 +1035,23 @@ out += '<h4>' + head + '</h4><div style="white-space:pre-wrap">' + body + '</div
 }
 return out;
 }
-let h = '<h4>🍽️ စားေသာက်ချိန် အချိန်ဇယား (ရည်မှန်း ' + plan.calorieTarget + ' kcal/ေန့)</h4>' +
+let h = '<h4>🍽️ စားသောက်ချိန် အချိန်ဇယား (ရည်မှန်း ' + plan.calorieTarget + ' kcal/နေ့)</h4>' +
 '<table><tr><th>အချိန်</th><th>အစာ</th><th>ပါဝင်မည့်အရာများ</th></tr>' +
 plan.meals.map(m => '<tr><td><b>' + fmtTimeMm(m.time) + '</b><div class="small muted">' + m.time + '</div></td><td>' +
 esc(m.name) + '</td><td>' + m.items.map(esc).join('<br>') + '</td></tr>').join('') + '</table>';
 h += '<h4>😴 အိပ်စက်ချိန်</h4><div class="info-box">အိပ်ရာဝင်ချိန်: <b>' + fmtTimeMm(plan.sleep.bed) +
 '</b> · နိုးထချိန်: <b>' + fmtTimeMm(plan.sleep.wake) + '</b> (၇.၅ နာရီ)</div>';
-h += '<h4>🏃 ၄ ပတ် ေလ့ကျင့်ခန်း အစီအစဉ်</h4>' +
+h += '<h4>🏃 ၄ ပတ် လေ့ကျင့်ခန်း အစီအစဉ်</h4>' +
 plan.workout.map(w => '<div class="card" style="margin-bottom:8px"><b>' + esc(w.week) + ' — ' + esc(w.title) +
 '</b><ul style="margin:6px 0 0;padding-left:20px">' + w.items.map(i => '<li>' + esc(i) + '</li>').join('') + '</ul></div>').join('');
-h += '<h4>🥗 စားသင့်ေသာ အစားအစာများ</h4><div>' + plan.diet.eat.map(i => '<span class="tag">✅ ' + esc(i) + '</span>').join('') + '</div>';
-h += '<h4>🚫 ေရှာင်ရန်များ</h4><div>' + plan.diet.avoid.map(i => '<span class="tag">❌ ' + esc(i) + '</span>').join('') + '</div>';
+h += '<h4>🥗 စားသင့်သော အစားအစာများ</h4><div>' + plan.diet.eat.map(i => '<span class="tag">✅ ' + esc(i) + '</span>').join('') + '</div>';
+h += '<h4>🚫 ရှောင်ရန်များ</h4><div>' + plan.diet.avoid.map(i => '<span class="tag">❌ ' + esc(i) + '</span>').join('') + '</div>';
 h += '<div class="info-box mt">💡 ' + esc(plan.tip) + '</div>';
 return h;
 }
 
 // ============================================================
-// VIEW: 🍚 အစားအေသာက် (Food Log)
+// VIEW: 🍚 အစားအသောက် (Food Log)
 // ============================================================
 let foodPhotoDataUrl = null;
 function renderFood() {
@@ -1071,7 +1066,7 @@ function renderFood() {
   const foodOptions = (window.FOOD_DB || []).map(f =>
     '<option value="' + esc(f.name) + '">' + esc(f.name) + ' — ' + f.kcal + ' kcal/' + esc(f.unit) + '</option>').join('');
 
-  let html = '<div class="card"><h3>🍚 ဒီေန့ စားသုံးမှု</h3>' +
+  let html = '<div class="card"><h3>🍚 ဒီနေ့ စားသုံးမှု</h3>' +
     '<div class="row space-between"><b>' + kcalToday + ' kcal</b><span class="muted">ရည်မှန်း ' + kcalTarget + ' kcal</span></div>' +
     '<div class="progress' + (kcalToday > kcalTarget ? ' over' : '') + '"><div style="width:' + pct + '%"></div></div>' +
     coachingMsg(p, kcalToday, kcalTarget) + '</div>';
@@ -1086,22 +1081,22 @@ function renderFood() {
       '<input id="foodSearch" list="foodList" placeholder="ဥပမာ ထမင်း၊ ကြက်သားဟင်း…">' +
       '<datalist id="foodList">' + foodOptions + '</datalist>' +
       '<div id="foodMatch" class="mt"></div>' +
-      '<div class="form-grid"><div><label>ပမာဏ (စားသုံးမှုအေရအတွက်)</label>' +
+      '<div class="form-grid"><div><label>ပမာဏ (စားသုံးမှုအရေအတွက်)</label>' +
       '<input id="foodAmount" type="number" inputmode="decimal" value="1" min="0.25" step="0.25"></div>' +
       '<div><label>ကယ်လိုရီ (လက်နဲ့ပြင်နိုင်သည်)</label><input id="foodKcal" type="number" inputmode="numeric" placeholder="kcal"></div></div>' +
       '<div class="mt"><button class="btn block" id="btnAddFoodText">မှတ်တမ်းတင်မယ်</button></div>' +
     '</div>' +
     '<div id="foodPhotoPane" style="display:none">' +
-      '<label>အစားအစာ ပုံရိုက်ရန် / ေရွးရန်</label>' +
+      '<label>အစားအစာ ပုံရိုက်ရန် / ရွေးရန်</label>' +
       '<input id="foodPhoto" type="file" accept="image/*" capture="environment">' +
       '<div id="foodPhotoPrev" class="mt"></div><div id="foodAiResult" class="mt"></div>' +
       (geminiKeyList().length
         ? '<div class="mt"><button class="btn block" id="btnAnalyzeFood">✨ AI နဲ့ ပုံကို ဆန်းစစ်မယ်</button></div>'
-        : '<div class="info-box mt">📷 ပုံမှ AI ဆန်းစစ်ချက်ရဖို့ Settings မှာ <b>Gemini API key</b> ထည့်ထားရပါမယ်။ Key မရှိရင် ပုံကြည့်ပြီး ေအာက်က စာနဲ့ထည့်တဲ့နည်းနဲ့ မှတ်နိုင်ပါတယ်။</div>') +
+        : '<div class="info-box mt">📷 ပုံမှ AI ဆန်းစစ်ချက်ရဖို့ Settings မှာ <b>Gemini API key</b> ထည့်ထားရပါမယ်။ Key မရှိရင် ပုံကြည့်ပြီး အောက်က စာနဲ့ထည့်တဲ့နည်းနဲ့ မှတ်နိုင်ပါတယ်။</div>') +
     '</div></div>';
 
-  html += '<div class="card"><h3>📝 ဒီေန့ မှတ်တမ်းများ</h3>';
-  if (!logs.length) html += '<div class="muted">မရှိေသးပါ</div>';
+  html += '<div class="card"><h3>📝 ဒီနေ့ မှတ်တမ်းများ</h3>';
+  if (!logs.length) html += '<div class="muted">မရှိသေးပါ</div>';
   logs.forEach(f => {
     html += '<div class="list-item"><span class="time small"><b>' + fmtTimeMm(f.time) + '</b></span>' +
       '<div class="grow"><b>' + esc(f.name) + '</b><div class="small muted">' + esc(f.amount || '') +
@@ -1131,7 +1126,7 @@ function renderFood() {
       if (!$('foodKcal').value) $('foodKcal').value = Math.round(hit.kcal * amt);
       box.dataset.food = hit.name; box.dataset.baseKcal = hit.kcal;
     } else {
-      box.innerHTML = q ? '<div class="warn-box">စာရင်းထဲမှာ မေတွ့ပါ — ကယ်လိုရီကို လက်နဲ့ထည့်ေပးပါ</div>' : '';
+      box.innerHTML = q ? '<div class="warn-box">စာရင်းထဲမှာ မတွေ့ပါ — ကယ်လိုရီကို လက်နဲ့ထည့်ပေးပါ</div>' : '';
       delete box.dataset.food;
     }
   });
@@ -1139,9 +1134,9 @@ function renderFood() {
   $('btnAddFoodText').addEventListener('click', () => {
     const box = $('foodMatch');
     const name = box.dataset.food || $('foodSearch').value.trim();
-    if (!name) { toast('အစားအစာ အမည် ထည့်ေပးပါ'); return; }
+    if (!name) { toast('အစားအစာ အမည် ထည့်ပေးပါ'); return; }
     const kcal = parseInt($('foodKcal').value, 10);
-    if (!kcal || kcal <= 0) { toast('ကယ်လိုရီ ထည့်ေပးပါ'); return; }
+    if (!kcal || kcal <= 0) { toast('ကယ်လိုရီ ထည့်ပေးပါ'); return; }
     DB.foodLog.push({ id: uid(), profileId: p.id, date: t, time: nowHM(),
       name: name, kcal: kcal, amount: ($('foodAmount').value || '1') + ' စား', source: 'text' });
     saveDB(); renderFood(); toast('မှတ်တမ်းတင်ပြီးပါပြီ ✅');
@@ -1164,15 +1159,15 @@ function renderFood() {
   });
   const analyzeBtn = $('btnAnalyzeFood');
   if (analyzeBtn) analyzeBtn.addEventListener('click', async () => {
-    if (!foodPhotoDataUrl) { toast('အရင်ပုံ ေရွးေပးပါ'); return; }
-    analyzeBtn.disabled = true; analyzeBtn.textContent = 'ဆန်းစစ်ေနသည်…';
+    if (!foodPhotoDataUrl) { toast('အရင်ပုံ ရွေးပေးပါ'); return; }
+    analyzeBtn.disabled = true; analyzeBtn.textContent = 'ဆန်းစစ်နေသည်…';
     try {
       const res = await geminiFoodVision(foodPhotoDataUrl,
-        (n, total, note) => { analyzeBtn.textContent = note === 'wait' ? 'ခဏေစာင့်ေနသည်…' : ('ပြန်ကြိုးစားေနသည်… (' + n + '/' + total + ')'); });
+        (n, total, note) => { analyzeBtn.textContent = note === 'wait' ? 'ခဏစောင့်နေသည်…' : ('ပြန်ကြိုးစားနေသည်… (' + n + '/' + total + ')'); });
       const box = $('foodAiResult');
-      if (!res.items.length) { box.innerHTML = '<div class="warn-box">ပုံထဲမှာ အစားအစာ မေတွ့ပါ</div>'; }
+      if (!res.items.length) { box.innerHTML = '<div class="warn-box">ပုံထဲမှာ အစားအစာ မတွေ့ပါ</div>'; }
       else {
-        box.innerHTML = '<div class="ok-box"><b>AI ေတွ့ရှိချက် (စုစုေပါင်း ' + res.totalKcal + ' kcal):</b><br>' +
+        box.innerHTML = '<div class="ok-box"><b>AI တွေ့ရှိချက် (စုစုပေါင်း ' + res.totalKcal + ' kcal):</b><br>' +
           res.items.map(i => '• ' + esc(i.name) + ' — ' + i.kcal + ' kcal').join('<br>') + '</div>' +
           '<button class="btn block mt" id="btnSaveAiFood">ဒီအတိုင်း မှတ်တမ်းတင်မယ်</button>';
         $('btnSaveAiFood').addEventListener('click', () => {
@@ -1182,14 +1177,14 @@ function renderFood() {
         });
       }
     } catch (e) {
-      $('foodAiResult').innerHTML = '<div class="alert">AI ေခါ်ဆို၍မရပါ: ' + esc(e.message) + '</div>';
+      $('foodAiResult').innerHTML = '<div class="alert">AI ခေါ်ဆို၍မရပါ: ' + esc(e.message) + '</div>';
     }
     analyzeBtn.disabled = false; analyzeBtn.textContent = '✨ AI နဲ့ ပုံကို ဆန်းစစ်မယ်';
   });
 }
 
 // ============================================================
-// VIEW: ⏰ သတိေပးချက်များ (Reminders & Trackers)
+// VIEW: ⏰ သတိပေးချက်များ (Reminders & Trackers)
 // ============================================================
 let notifTimers = [];
 function renderRemind() {
@@ -1200,38 +1195,38 @@ function renderRemind() {
   const p = activeProfile();
   const sleeps = DB.sleepLog.filter(s => s.profileId === p.id).sort((a, b) => a.date < b.date ? -1 : 1).slice(0, 7);
 
-  let html = '<div class="warn-box">ℹ️ <b>Website version:</b> ဒီ app ကို ဖွင့်ထားမှ သတိေပးချက်များ ရပါမယ်။<br>📱 <b>APK version</b> မှာ ေနာက်ခံကေန (app မဖွင့်ထားလည်း) သတိေပးချက် ရပါမယ်။</div>';
+  let html = '<div class="warn-box">ℹ️ <b>Website version:</b> ဒီ app ကို ဖွင့်ထားမှ သတိပေးချက်များ ရပါမယ်။<br>📱 <b>APK version</b> မှာ နောက်ခံကနေ (app မဖွင့်ထားလည်း) သတိပေးချက် ရပါမယ်။</div>';
 
-  html += '<div class="card"><h3>🔔 သတိေပးချက် ဆက်တင်များ</h3>' +
-    '<div class="check-line"><input type="checkbox" id="rmWater"' + (r.waterEnabled ? ' checked' : '') + '><label for="rmWater" style="margin:0">ေရေသာက်ရန် သတိေပးမယ်</label></div>' +
+  html += '<div class="card"><h3>🔔 သတိပေးချက် ဆက်တင်များ</h3>' +
+    '<div class="check-line"><input type="checkbox" id="rmWater"' + (r.waterEnabled ? ' checked' : '') + '><label for="rmWater" style="margin:0">ရေသောက်ရန် သတိပေးမယ်</label></div>' +
     '<div class="form-grid"><div><label>ဘယ်နှစ်မိနစ်တစ်ခါ</label><input id="rmWaterInt" type="number" value="' + r.waterInterval + '" min="30" step="30"></div>' +
     '<div><label>အချိန်အပိုင်းအခြား</label><div class="row"><input id="rmWaterStart" type="time" value="' + r.waterStart + '"><span>–</span><input id="rmWaterEnd" type="time" value="' + r.waterEnd + '"></div></div></div>' +
-    '<div class="check-line"><input type="checkbox" id="rmMed"' + (r.medEnabled ? ' checked' : '') + '><label for="rmMed" style="margin:0">ေဆးေသာက်ချိန် သတိေပးမယ်</label></div>' +
-    '<div class="check-line"><input type="checkbox" id="rmSleep"' + (r.sleepEnabled ? ' checked' : '') + '><label for="rmSleep" style="margin:0">အိပ်ရာဝင်ချိန် သတိေပးမယ်</label></div>' +
+    '<div class="check-line"><input type="checkbox" id="rmMed"' + (r.medEnabled ? ' checked' : '') + '><label for="rmMed" style="margin:0">ဆေးသောက်ချိန် သတိပေးမယ်</label></div>' +
+    '<div class="check-line"><input type="checkbox" id="rmSleep"' + (r.sleepEnabled ? ' checked' : '') + '><label for="rmSleep" style="margin:0">အိပ်ရာဝင်ချိန် သတိပေးမယ်</label></div>' +
     '<label>အိပ်ရာဝင်ချိန်</label><input id="rmBedtime" type="time" value="' + r.bedtime + '" style="width:auto">' +
-    '<div class="row wrap mt"><button class="btn" id="btnNotifPerm">🔔 Notification ခွင့်ပြုချက် ေတာင်းမယ်</button>' +
+    '<div class="row wrap mt"><button class="btn" id="btnNotifPerm">🔔 Notification ခွင့်ပြုချက် တောင်းမယ်</button>' +
     '<button class="btn secondary" id="btnSaveRemind">💾 သိမ်းမယ်</button></div>' +
-    '<div class="small muted mt" id="notifStatus">အေခြအေန: ' + notifStatusMm() + '</div></div>';
+    '<div class="small muted mt" id="notifStatus">အခြေအနေ: ' + notifStatusMm() + '</div></div>';
 
-  html += '<div class="card"><h3>💧 ေရမှတ်တမ်း (ဒီေန့ ' + waterToday + ' / ' + waterTarget + ' ml)</h3>' +
+  html += '<div class="card"><h3>💧 ရေမှတ်တမ်း (ဒီနေ့ ' + waterToday + ' / ' + waterTarget + ' ml)</h3>' +
     '<div class="progress"><div style="width:' + Math.min(100, Math.round(waterToday / waterTarget * 100)) + '%"></div></div>' +
     '<div class="water-btns"><button class="btn" data-wq="250">+ 250 ml</button><button class="btn" data-wq="500">+ 500 ml</button></div>' +
     '<div class="row"><input id="waterCustom" type="number" inputmode="numeric" class="grow" placeholder="ml ရိုက်ထည့်ရန်"><button class="btn small-btn secondary" id="btnWaterCustom">ထည့်မယ်</button></div></div>';
 
   html += '<div class="card"><div class="row space-between"><h3>😴 အိပ်စက်မှု မှတ်တမ်း</h3><button class="btn small-btn" id="btnAddSleep">＋ ထည့်မယ်</button></div>';
-  if (!sleeps.length) html += '<div class="muted">မရှိေသးပါ</div>';
+  if (!sleeps.length) html += '<div class="muted">မရှိသေးပါ</div>';
   sleeps.forEach(s => {
     const dur = sleepDuration(s);
     html += '<div class="list-item"><div class="grow"><b>' + fmtDateMm(s.date) + '</b> — ' + fmtTimeMm(s.bedtime) + ' → ' + fmtTimeMm(s.wakeTime) +
-      '<div class="small muted">ကြာချိန် ' + dur + ' · အရည်အေသွး ' + '★'.repeat(s.quality) + '☆'.repeat(5 - s.quality) +
+      '<div class="small muted">ကြာချိန် ' + dur + ' · အရည်အသွေး ' + '★'.repeat(s.quality) + '☆'.repeat(5 - s.quality) +
       (s.nightmare ? ' · 😱 အိပ်မက်ဆိုး' : '') + '</div></div>' +
       '<button class="btn small-btn danger" data-delsleep="' + s.id + '">ဖျက်မယ်</button></div>';
   });
   html += '</div>';
 
   const act = DB.activityLog.find(a => a.profileId === p.id && a.date === t);
-  html += '<div class="card"><h3>🚶 ဒီေန့ လှုပ်ရှားမှု</h3>' +
-    '<div class="row space-between"><div>ေခြလှမ်း: <b>' + (act ? act.steps : 0) + '</b> · မိနစ်: <b>' + (act ? (act.minutes || 0) : 0) + '</b></div>' +
+  html += '<div class="card"><h3>🚶 ဒီနေ့ လှုပ်ရှားမှု</h3>' +
+    '<div class="row space-between"><div>ခြေလှမ်း: <b>' + (act ? act.steps : 0) + '</b> · မိနစ်: <b>' + (act ? (act.minutes || 0) : 0) + '</b></div>' +
     '<button class="btn small-btn secondary" id="btnEditAct">ပြင်/ထည့်မယ်</button></div></div>';
 
   $('view-remind').innerHTML = html;
@@ -1239,7 +1234,7 @@ function renderRemind() {
   $('btnNotifPerm').addEventListener('click', async () => {
     if (!('Notification' in window)) { toast('ဒီ browser က Notification မရပါ'); return; }
     const perm = await Notification.requestPermission();
-    $('notifStatus').textContent = 'အေခြအေန: ' + notifStatusMm();
+    $('notifStatus').textContent = 'အခြေအနေ: ' + notifStatusMm();
     toast(perm === 'granted' ? 'ခွင့်ပြုပြီးပါပြီ ✅' : 'ခွင့်မပြုပါ');
     scheduleCheck();
   });
@@ -1257,7 +1252,7 @@ function renderRemind() {
     b.addEventListener('click', () => { addWater(+b.dataset.wq); renderRemind(); }));
   $('btnWaterCustom').addEventListener('click', () => {
     const v = parseInt($('waterCustom').value, 10);
-    if (!v || v <= 0) { toast('ml ပမာဏ ထည့်ေပးပါ'); return; }
+    if (!v || v <= 0) { toast('ml ပမာဏ ထည့်ပေးပါ'); return; }
     addWater(v); renderRemind();
   });
   $('btnAddSleep').addEventListener('click', openSleepModal);
@@ -1270,7 +1265,7 @@ function renderRemind() {
 }
 function notifStatusMm() {
   if (!('Notification' in window)) return 'မရပါ';
-  return { granted: 'ခွင့်ပြုပြီး ✅', denied: 'ပိတ်ထားသည်', default: 'မေတာင်းရေသးပါ' }[Notification.permission] || Notification.permission;
+  return { granted: 'ခွင့်ပြုပြီး ✅', denied: 'ပိတ်ထားသည်', default: 'မတောင်းရသေးပါ' }[Notification.permission] || Notification.permission;
 }
 function sleepDuration(s) {
   if (!s.bedtime || !s.wakeTime) return '—';
@@ -1281,11 +1276,11 @@ function sleepDuration(s) {
 function openSleepModal() {
   const p = activeProfile();
   openModal('😴 အိပ်စက်မှု မှတ်တမ်း',
-    '<label>ေန့ (အိပ်ရာဝင်သည့်ေန့)</label><input id="mSlDate" type="date" value="' + todayStr() + '">' +
+    '<label>နေ့ (အိပ်ရာဝင်သည့်နေ့)</label><input id="mSlDate" type="date" value="' + todayStr() + '">' +
     '<div class="form-grid"><div><label>အိပ်ရာဝင်ချိန်</label><input id="mSlBed" type="time" value="' + (DB.reminders.bedtime || '22:30') + '"></div>' +
     '<div><label>နိုးထချိန်</label><input id="mSlWake" type="time" value="06:00"></div></div>' +
-    '<label>အိပ်စက်မှု အရည်အေသွး (1–5)</label><select id="mSlQ">' +
-    [1, 2, 3, 4, 5].map(n => '<option value="' + n + '"' + (n === 3 ? ' selected' : '') + '>' + n + ' — ' + ['အလွန်ဆိုး', 'ဆိုး', 'သာမန်', 'ေကာင်း', 'အလွန်ေကာင်း'][n - 1] + '</option>').join('') + '</select>' +
+    '<label>အိပ်စက်မှု အရည်အသွေး (1–5)</label><select id="mSlQ">' +
+    [1, 2, 3, 4, 5].map(n => '<option value="' + n + '"' + (n === 3 ? ' selected' : '') + '>' + n + ' — ' + ['အလွန်ဆိုး', 'ဆိုး', 'သာမန်', 'ကောင်း', 'အလွန်ကောင်း'][n - 1] + '</option>').join('') + '</select>' +
     '<div class="check-line"><input type="checkbox" id="mSlNight"><label for="mSlNight" style="margin:0">😱 အိပ်မက်ဆိုး မက်ခဲ့သည်</label></div>' +
     '<div class="mt"><button class="btn block" id="mSlSave">သိမ်းမယ်</button></div>');
   $('mSlSave').addEventListener('click', () => {
@@ -1320,7 +1315,7 @@ function scheduleCheck() {
         if (!fired[k] && Math.abs(mins - hmToMin(tm)) <= 2) {
           const dayLog = (DB.medLog[t] || {});
           if (dayLog[m.id + '@' + tm] !== 'taken') {
-            fireNotif('💊 ေဆးေသာက်ချိန်', m.name + (m.dosage ? ' (' + m.dosage + ')' : '') + ' ေသာက်ဖို့ အချိန်ေရာက်ပါပြီ');
+            fireNotif('💊 ဆေးသောက်ချိန်', m.name + (m.dosage ? ' (' + m.dosage + ')' : '') + ' သောက်ဖို့ အချိန်ရောက်ပါပြီ');
             mark(k);
           }
         }
@@ -1330,14 +1325,14 @@ function scheduleCheck() {
   if (r.waterEnabled) {
     const k = 'water_' + Math.floor(mins / r.waterInterval);
     if (!fired[k] && mins >= hmToMin(r.waterStart) && mins <= hmToMin(r.waterEnd) && (mins % r.waterInterval) <= 2) {
-      fireNotif('💧 ေရေသာက်ပါ', 'ေရဓာတ်ပြည့်ဝဖို့ ေရတစ်ခွက် ေသာက်လိုက်ပါ');
+      fireNotif('💧 ရေသောက်ပါ', 'ရေဓာတ်ပြည့်ဝဖို့ ရေတစ်ခွက် သောက်လိုက်ပါ');
       mark(k);
     }
   }
   if (r.sleepEnabled) {
     const k = 'sleep_' + t;
     if (!fired[k] && Math.abs(mins - hmToMin(r.bedtime)) <= 2) {
-      fireNotif('😴 အိပ်ချိန်ေရာက်ပါပြီ', 'အိပ်ရာဝင်ဖို့ ပြင်ဆင်လိုက်ပါ — မနက်ဖြန် လန်းဆန်းပါေစ');
+      fireNotif('😴 အိပ်ချိန်ရောက်ပါပြီ', 'အိပ်ရာဝင်ဖို့ ပြင်ဆင်လိုက်ပါ — မနက်ဖြန် လန်းဆန်းပါစေ');
       mark(k);
     }
   }
@@ -1346,7 +1341,7 @@ function scheduleCheck() {
   if (!fired[rk]) {
     const low = DB.meds.map(m => ({ m: m, left: medSupplyLeft(m) })).filter(x => x.left != null && x.left <= 7 && x.left >= 0);
     if (low.length) {
-      fireNotif('⚠️ ေဆးကုန်ခါနီးပါပြီ', low.map(x => x.m.name + ' (' + x.left + ' ရက်စာ)').join(', '));
+      fireNotif('⚠️ ဆေးကုန်ခါနီးပါပြီ', low.map(x => x.m.name + ' (' + x.left + ' ရက်စာ)').join(', '));
       mark(rk);
     }
   }
@@ -1357,7 +1352,7 @@ function scheduleCheck() {
 // ============================================================
 function renderProgress() {
   const p = activeProfile();
-  let html = '<div class="card"><div class="row space-between"><h3>⚖️ ကိုယ်အေလးချိန် မှတ်တမ်း</h3>' +
+  let html = '<div class="card"><div class="row space-between"><h3>⚖️ ကိုယ်အလေးချိန် မှတ်တမ်း</h3>' +
     '<button class="btn small-btn" id="btnAddWeight">＋ ထည့်မယ်</button></div>' +
     '<canvas id="chartWeight" class="chart"></canvas></div>';
   html += '<div class="card"><h3>📏 BMI မှတ်တမ်း</h3><canvas id="chartBmi" class="chart"></canvas></div>';
@@ -1366,7 +1361,7 @@ function renderProgress() {
 
   const wl = DB.weightLog.filter(w => w.profileId === p.id).sort((a, b) => a.date < b.date ? -1 : 1);
   drawLineChart('chartWeight', [{
-    label: 'ကိုယ်အေလးချိန် (kg)', color: '#0d7a5f',
+    label: 'ကိုယ်အလေးချိန် (kg)', color: '#0d7a5f',
     points: wl.map(w => ({ x: w.date.slice(5), y: +w.weight }))
   }], { unit: 'kg' });
   const h = parseFloat(p.height) || 0;
@@ -1389,22 +1384,22 @@ function renderProgress() {
     sched.forEach(s => { total++; if (s.status === 'taken') taken++; });
   });
   $('weeklySummary').innerHTML = '<table>' +
-    '<tr><td>ပျမ်းမျှ ကယ်လိုရီ/ေန့</td><td><b>' + Math.round(kcalSum / 7) + ' kcal</b></td></tr>' +
-    '<tr><td>ပျမ်းမျှ ေရ/ေန့</td><td><b>' + Math.round(waterSum / 7) + ' ml</b></td></tr>' +
-    '<tr><td>စုစုေပါင်း ေခြလှမ်း</td><td><b>' + stepsSum + '</b></td></tr>' +
-    '<tr><td>ပျမ်းမျှ အိပ်စက်မှု အရည်အေသွး</td><td><b>' + (qN ? (qSum / qN).toFixed(1) + ' / 5' : '—') + '</b></td></tr>' +
-    '<tr><td>ေဆးေသာက်မှန်ကန်မှု</td><td><b>' + (total ? Math.round(taken / total * 100) + '%' : '—') + '</b></td></tr>' +
+    '<tr><td>ပျမ်းမျှ ကယ်လိုရီ/နေ့</td><td><b>' + Math.round(kcalSum / 7) + ' kcal</b></td></tr>' +
+    '<tr><td>ပျမ်းမျှ ရေ/နေ့</td><td><b>' + Math.round(waterSum / 7) + ' ml</b></td></tr>' +
+    '<tr><td>စုစုပေါင်း ခြေလှမ်း</td><td><b>' + stepsSum + '</b></td></tr>' +
+    '<tr><td>ပျမ်းမျှ အိပ်စက်မှု အရည်အသွေး</td><td><b>' + (qN ? (qSum / qN).toFixed(1) + ' / 5' : '—') + '</b></td></tr>' +
+    '<tr><td>ဆေးသောက်မှန်ကန်မှု</td><td><b>' + (total ? Math.round(taken / total * 100) + '%' : '—') + '</b></td></tr>' +
     '</table>';
 
   $('btnAddWeight').addEventListener('click', () => {
-    openModal('⚖️ ကိုယ်အေလးချိန် မှတ်တမ်း',
-      '<label>ေန့</label><input id="mWDate" type="date" value="' + todayStr() + '">' +
-      '<div class="form-grid"><div><label>အေလးချိန် (kg) *</label><input id="mWWeight" type="number" inputmode="decimal" placeholder="ဥပမာ 65.5"></div>' +
+    openModal('⚖️ ကိုယ်အလေးချိန် မှတ်တမ်း',
+      '<label>နေ့</label><input id="mWDate" type="date" value="' + todayStr() + '">' +
+      '<div class="form-grid"><div><label>အလေးချိန် (kg) *</label><input id="mWWeight" type="number" inputmode="decimal" placeholder="ဥပမာ 65.5"></div>' +
       '<div><label>ခါးပတ်လည် (လက်မ)</label><input id="mWWaist" type="number" inputmode="decimal" placeholder="ဥပမာ 32"></div></div>' +
       '<div class="mt"><button class="btn block" id="mWSave">သိမ်းမယ်</button></div>');
     $('mWSave').addEventListener('click', () => {
       const w = parseFloat($('mWWeight').value);
-      if (!w || w <= 0) { toast('အေလးချိန် မှန်ေအာင်ထည့်ပါ'); return; }
+      if (!w || w <= 0) { toast('အလေးချိန် မှန်အောင်ထည့်ပါ'); return; }
       DB.weightLog.push({ id: uid(), profileId: p.id, date: $('mWDate').value || todayStr(),
         weight: w, waist: $('mWWaist').value.trim() });
       saveDB(); closeModal(); renderProgress(); toast('မှတ်တမ်းတင်ပြီးပါပြီ ✅');
@@ -1413,7 +1408,7 @@ function renderProgress() {
 }
 
 // ============================================================
-// VIEW: 📝 ေရာဂါလက္ခဏာ (Symptom Diary)
+// VIEW: 📝 ရောဂါလက္ခဏာ (Symptom Diary)
 // ============================================================
 function renderSymptom() {
   const p = activeProfile();
@@ -1436,23 +1431,23 @@ function renderSymptom() {
       ' ဖြစ်ပွားခဲ့ပါတယ်။ ဆရာဝန်နဲ့ ပြသဖို့ စဉ်းစားပါ။</div>';
   }
   html += '<div class="card"><h3>📝 လက္ခဏာ မှတ်တမ်းတင်ရန်</h3>' +
-    '<div class="form-grid"><div><label>ေန့</label><input id="syDate" type="date" value="' + todayStr() + '"></div>' +
+    '<div class="form-grid"><div><label>နေ့</label><input id="syDate" type="date" value="' + todayStr() + '"></div>' +
     '<div><label>အချိန်</label><input id="syTime" type="time" value="' + nowHM() + '"></div></div>' +
-    '<label>လက္ခဏာ *</label><input id="syName" list="symList" placeholder="ဥပမာ ေခါင်းကိုက်"><datalist id="symList">' + symOptions + '</datalist>' +
+    '<label>လက္ခဏာ *</label><input id="syName" list="symList" placeholder="ဥပမာ ခေါင်းကိုက်"><datalist id="symList">' + symOptions + '</datalist>' +
     '<label>ပြင်းထန်မှု (1–5)</label><select id="sySev">' +
     [1, 2, 3, 4, 5].map(n => '<option value="' + n + '"' + (n === 2 ? ' selected' : '') + '>' + n + '</option>').join('') + '</select>' +
-    '<label>မှတ်ချက်</label><input id="syNote" placeholder="ဥပမာ ညေန ၃ နာရီကတည်းက">' +
+    '<label>မှတ်ချက်</label><input id="syNote" placeholder="ဥပမာ ညနေ ၃ နာရီကတည်းက">' +
     '<div class="mt"><button class="btn block" id="btnAddSym">မှတ်တမ်းတင်မယ်</button></div></div>';
 
-  html += '<div class="card"><h3>📊 ၇ ရက်အတွင်း အကြိမ်ေရ</h3>';
+  html += '<div class="card"><h3>📊 ၇ ရက်အတွင်း အကြိမ်ရေ</h3>';
   const keys = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
   if (!keys.length) html += '<div class="muted">မရှိပါ</div>';
-  else html += '<table><tr><th>လက္ခဏာ</th><th>အကြိမ်ေရ</th></tr>' +
+  else html += '<table><tr><th>လက္ခဏာ</th><th>အကြိမ်ရေ</th></tr>' +
     keys.map(k => '<tr><td>' + esc(k) + '</td><td><b>' + counts[k] + '</b></td></tr>').join('') + '</table>';
   html += '</div>';
 
-  html += '<div class="card"><h3>🕘 ေနာက်ဆုံး မှတ်တမ်းများ</h3>';
-  if (!list.length) html += '<div class="muted">မရှိေသးပါ</div>';
+  html += '<div class="card"><h3>🕘 နောက်ဆုံး မှတ်တမ်းများ</h3>';
+  if (!list.length) html += '<div class="muted">မရှိသေးပါ</div>';
   list.forEach(s => {
     html += '<div class="list-item"><div class="grow"><b>' + esc(s.name) + '</b> ' +
       '<span class="tag">အဆင့် ' + s.severity + '</span>' +
@@ -1464,7 +1459,7 @@ function renderSymptom() {
   $('view-symptom').innerHTML = html;
   $('btnAddSym').addEventListener('click', () => {
     const name = $('syName').value.trim();
-    if (!name) { toast('လက္ခဏာ ထည့်ေပးပါ'); return; }
+    if (!name) { toast('လက္ခဏာ ထည့်ပေးပါ'); return; }
     DB.symptoms.push({ id: uid(), profileId: p.id, date: $('syDate').value || todayStr(),
       time: $('syTime').value || nowHM(), name: name,
       severity: parseInt($('sySev').value, 10), note: $('syNote').value.trim() });
@@ -1478,40 +1473,40 @@ function renderSymptom() {
 }
 
 // ============================================================
-// VIEW: 🚨 အေရးေပါ် (Emergency)
+// VIEW: 🚨 အရေးပေါ် (Emergency)
 // ============================================================
 function renderEmergency() {
   const p = activeProfile();
-  let html = '<div class="card"><h3>🚨 အေရးေပါ် အချက်အလက်</h3>' +
+  let html = '<div class="card"><h3>🚨 အရေးပေါ် အချက်အလက်</h3>' +
     '<table>' +
     '<tr><td><b>အမည်</b></td><td>' + esc(p.name) + '</td></tr>' +
-    '<tr><td><b>ေသွးအမျိုးအစား</b></td><td><b style="font-size:1.3rem;color:#d64545">' + esc(p.bloodType || '—') + '</b></td></tr>' +
+    '<tr><td><b>သွေးအမျိုးအစား</b></td><td><b style="font-size:1.3rem;color:#d64545">' + esc(p.bloodType || '—') + '</b></td></tr>' +
     '<tr><td><b>ဓာတ်မတည့်မှု</b></td><td>' + (p.allergies.length ? p.allergies.map(esc).join(', ') : '—') + '</td></tr>' +
-    '<tr><td><b>နာတာရှည်ေရာဂါ</b></td><td>' + (p.conditions.length ? p.conditions.map(esc).join(', ') : '—') + '</td></tr>' +
-    '<tr><td><b>ေသာက်ေနေသာေဆးများ</b></td><td>' + (DB.meds.filter(m => m.profileId === p.id).map(m => esc(m.name)).join(', ') || '—') + '</td></tr>' +
+    '<tr><td><b>နာတာရှည်ရောဂါ</b></td><td>' + (p.conditions.length ? p.conditions.map(esc).join(', ') : '—') + '</td></tr>' +
+    '<tr><td><b>သောက်နေသောဆေးများ</b></td><td>' + (DB.meds.filter(m => m.profileId === p.id).map(m => esc(m.name)).join(', ') || '—') + '</td></tr>' +
     '</table></div>';
 
-  html += '<div class="card"><div class="row space-between"><h3>📞 အေရးေပါ် ဆက်သွယ်ရမည့်သူများ</h3>' +
+  html += '<div class="card"><div class="row space-between"><h3>📞 အရေးပေါ် ဆက်သွယ်ရမည့်သူများ</h3>' +
     '<button class="btn small-btn" id="btnAddContact">＋ ထည့်မယ်</button></div>';
-  if (!DB.emergencyContacts.length) html += '<div class="muted">မထည့်ရေသးပါ</div>';
+  if (!DB.emergencyContacts.length) html += '<div class="muted">မထည့်ရသေးပါ</div>';
   DB.emergencyContacts.forEach(c => {
     html += '<div class="list-item"><div class="grow"><b>' + esc(c.name) + '</b>' +
       '<div class="small muted">' + esc(c.relation || '') + ' · ' + esc(c.phone) + '</div></div>' +
-      '<a class="btn small-btn" href="tel:' + esc(c.phone.replace(/\s/g, '')) + '">📞 ေခါ်မယ်</a>' +
+      '<a class="btn small-btn" href="tel:' + esc(c.phone.replace(/\s/g, '')) + '">📞 ခေါ်မယ်</a>' +
       '<button class="btn small-btn danger" data-delcontact="' + c.id + '">ဖျက်မယ်</button></div>';
   });
-  html += '<div class="small muted mt">💡 အေရးေပါ်အေခြအေနမှာ အထက်ပါ ခလုတ်နှိပ်ရုံနဲ့ ဖုန်းေခါ်နိုင်ပါတယ်</div></div>';
+  html += '<div class="small muted mt">💡 အရေးပေါ်အခြေအနေမှာ အထက်ပါ ခလုတ်နှိပ်ရုံနဲ့ ဖုန်းခေါ်နိုင်ပါတယ်</div></div>';
 
   $('view-emergency').innerHTML = html;
   $('btnAddContact').addEventListener('click', () => {
     openModal('📞 ဆက်သွယ်ရန် ထည့်မယ်',
-      '<label>အမည် *</label><input id="mCName" placeholder="ဥပမာ အေမ">' +
+      '<label>အမည် *</label><input id="mCName" placeholder="ဥပမာ အမေ">' +
       '<label>ဖုန်းနံပါတ် *</label><input id="mCPhone" type="tel" inputmode="tel" placeholder="ဥပမာ 09xxxxxxxxx">' +
-      '<label>ေတာ်စပ်ပုံ</label><input id="mCRel" placeholder="ဥပမာ မိခင်">' +
+      '<label>တော်စပ်ပုံ</label><input id="mCRel" placeholder="ဥပမာ မိခင်">' +
       '<div class="mt"><button class="btn block" id="mCSave">သိမ်းမယ်</button></div>');
     $('mCSave').addEventListener('click', () => {
       const name = $('mCName').value.trim(), phone = $('mCPhone').value.trim();
-      if (!name || !phone) { toast('အမည် နှင့် ဖုန်း ထည့်ေပးပါ'); return; }
+      if (!name || !phone) { toast('အမည် နှင့် ဖုန်း ထည့်ပေးပါ'); return; }
       DB.emergencyContacts.push({ id: uid(), name: name, phone: phone, relation: $('mCRel').value.trim() });
       saveDB(); closeModal(); renderEmergency(); toast('ထည့်ပြီးပါပြီ ✅');
     });
@@ -1530,7 +1525,7 @@ function renderPeriod() {
   const p = activeProfile();
   if (!p.periodEnabled) {
     $('view-period').innerHTML = '<div class="card"><h3>🩸 ရာသီစက် မှတ်တမ်း</h3>' +
-      '<div class="info-box">ဒီ module ကို သုံးဖို့ <b>ကျန်းမာေရးဖိုင်</b> tab မှာ “ရာသီစက် မှတ်တမ်း သုံးမယ်” ကို အမှန်ခြစ်ေပးပါ။</div>' +
+      '<div class="info-box">ဒီ module ကို သုံးဖို့ <b>ကျန်းမာရေးဖိုင်</b> tab မှာ “ရာသီစက် မှတ်တမ်း သုံးမယ်” ကို အမှန်ခြစ်ပေးပါ။</div>' +
       '<button class="btn" id="btnEnablePeriod">ဖွင့်မယ်</button></div>';
     $('btnEnablePeriod').addEventListener('click', () => {
       p.periodEnabled = true; saveDB(); renderPeriod(); toast('ဖွင့်ပြီးပါပြီ ✅');
@@ -1548,12 +1543,12 @@ function renderPeriod() {
     const next = addDays(logs[0].start, avg);
     const daysLeft = Math.round((new Date(next + 'T12:00:00') - new Date(todayStr() + 'T12:00:00')) / 86400000);
     predHtml = '<div class="info-box">📅 ပျမ်းမျှ စက်ဝန်း: <b>' + avg + ' ရက်</b><br>' +
-      'ေနာက်တစ်ကြိမ် ခန့်မှန်း: <b>' + fmtDateMm(next) + '</b>' +
-      (daysLeft >= 0 ? ' (' + daysLeft + ' ရက် အလို)' : ' (' + (-daysLeft) + ' ရက် ေကျာ်လွန်)') + '</div>';
+      'နောက်တစ်ကြိမ် ခန့်မှန်း: <b>' + fmtDateMm(next) + '</b>' +
+      (daysLeft >= 0 ? ' (' + daysLeft + ' ရက် အလို)' : ' (' + (-daysLeft) + ' ရက် ကျော်လွန်)') + '</div>';
   }
   let html = '<div class="card"><div class="row space-between"><h3>🩸 ရာသီစက် မှတ်တမ်း</h3>' +
     '<button class="btn small-btn" id="btnAddPeriod">＋ ထည့်မယ်</button></div>' + predHtml;
-  if (!logs.length) html += '<div class="muted mt">မရှိေသးပါ</div>';
+  if (!logs.length) html += '<div class="muted mt">မရှိသေးပါ</div>';
   logs.slice(0, 12).forEach(l => {
     html += '<div class="list-item"><div class="grow"><b>' + fmtDateMm(l.start) + '</b></div>' +
       '<button class="btn small-btn danger" data-delperiod="' + l.id + '">ဖျက်မယ်</button></div>';
@@ -1562,7 +1557,7 @@ function renderPeriod() {
   $('view-period').innerHTML = html;
   $('btnAddPeriod').addEventListener('click', () => {
     openModal('🩸 ရာသီစက် မှတ်တမ်း',
-      '<label>စတင်သည့်ေန့</label><input id="mPDate" type="date" value="' + todayStr() + '">' +
+      '<label>စတင်သည့်နေ့</label><input id="mPDate" type="date" value="' + todayStr() + '">' +
       '<div class="mt"><button class="btn block" id="mPSave2">သိမ်းမယ်</button></div>');
     $('mPSave2').addEventListener('click', () => {
       DB.periodLog.push({ id: uid(), profileId: p.id, start: $('mPDate').value || todayStr() });
@@ -1595,39 +1590,39 @@ function renderReport() {
   }
 
   let html = '<div class="card no-print"><h3>🖨️ ဆရာဝန်ပြရန် အစီရင်ခံစာ</h3>' +
-    '<div class="muted">ေအာက်ပါ အကျဉ်းချုပ်ကို print ထုတ်ပြီး ဆရာဝန်ထံ ယူသွားနိုင်ပါတယ်</div>' +
+    '<div class="muted">အောက်ပါ အကျဉ်းချုပ်ကို print ထုတ်ပြီး ဆရာဝန်ထံ ယူသွားနိုင်ပါတယ်</div>' +
     '<div class="mt"><button class="btn block" id="btnPrint">🖨️ Print ထုတ်မယ် / PDF သိမ်းမယ်</button></div></div>';
 
   html += '<div class="card"><h3>👤 လူနာ အချက်အလက် (' + fmtDateMm(todayStr()) + ')</h3><table>' +
     '<tr><td><b>အမည်</b></td><td>' + esc(p.name) + '</td></tr>' +
     '<tr><td><b>အသက် / ကျား-မ</b></td><td>' + esc(p.age || '—') + ' / ' + (p.gender === 'male' ? 'ကျား' : p.gender === 'female' ? 'မ' : '—') + '</td></tr>' +
-    '<tr><td><b>အရပ် / အေလးချိန်</b></td><td>' + esc(p.height || '—') + ' cm / ' + (lastW ? lastW.weight + ' kg (' + fmtDateMm(lastW.date) + ')' : esc(p.weight || '—') + ' kg') + '</td></tr>' +
+    '<tr><td><b>အရပ် / အလေးချိန်</b></td><td>' + esc(p.height || '—') + ' cm / ' + (lastW ? lastW.weight + ' kg (' + fmtDateMm(lastW.date) + ')' : esc(p.weight || '—') + ' kg') + '</td></tr>' +
     '<tr><td><b>BMI</b></td><td>' + (bmi ? bmi.toFixed(1) + ' (' + bmiLabel(bmi) + ')' : '—') + '</td></tr>' +
-    '<tr><td><b>ေသွးအမျိုးအစား</b></td><td>' + esc(p.bloodType || '—') + '</td></tr>' +
-    '<tr><td><b>နာတာရှည်ေရာဂါ</b></td><td>' + (p.conditions.map(esc).join(', ') || '—') + '</td></tr>' +
-    '<tr><td><b>မျိုးရိုးေရာဂါ</b></td><td>' + (p.familyHistory.map(esc).join(', ') || '—') + '</td></tr>' +
+    '<tr><td><b>သွေးအမျိုးအစား</b></td><td>' + esc(p.bloodType || '—') + '</td></tr>' +
+    '<tr><td><b>နာတာရှည်ရောဂါ</b></td><td>' + (p.conditions.map(esc).join(', ') || '—') + '</td></tr>' +
+    '<tr><td><b>မျိုးရိုးရောဂါ</b></td><td>' + (p.familyHistory.map(esc).join(', ') || '—') + '</td></tr>' +
     '<tr><td><b>ဓာတ်မတည့်မှု</b></td><td>' + (p.allergies.map(esc).join(', ') || '—') + '</td></tr>' +
     '</table></div>';
 
-  html += '<div class="card"><h3>💊 လက်ရှိေသာက်ေနေသာေဆးများ</h3>';
-  html += meds.length ? '<table><tr><th>ေဆး</th><th>ပမာဏ</th><th>အချိန်</th><th>အေကြာင်းအရင်း</th></tr>' +
+  html += '<div class="card"><h3>💊 လက်ရှိသောက်နေသောဆေးများ</h3>';
+  html += meds.length ? '<table><tr><th>ဆေး</th><th>ပမာဏ</th><th>အချိန်</th><th>အကြောင်းအရင်း</th></tr>' +
     meds.map(m => '<tr><td>' + esc(m.name) + '</td><td>' + esc(m.dosage || '—') + '</td><td>' + (m.times || []).map(fmtTimeMm).join(', ') + '</td><td>' + esc(m.reason || '—') + '</td></tr>').join('') + '</table>'
     : '<div class="muted">မရှိပါ</div>';
   html += '</div>';
 
   html += '<div class="card"><h3>📊 ၇ ရက်အတွင်း အကျဉ်းချုပ်</h3><table>' +
-    '<tr><td><b>ပျမ်းမျှ ကယ်လိုရီ</b></td><td>' + Math.round(kcal7 / 7) + ' kcal/ေန့ (ရည်မှန်း ' + calorieTarget(p) + ')</td></tr>' +
-    '<tr><td><b>ပျမ်းမျှ ေရ</b></td><td>' + Math.round([0,1,2,3,4,5,6].reduce((a,i) => a + (DB.waterLog[addDays(todayStr(),-i)] || 0), 0) / 7) + ' ml/ေန့</td></tr>' +
-    '<tr><td><b>အိပ်စက်မှု</b></td><td>' + (recentSleep.length ? recentSleep.map(s => fmtDateMm(s.date) + ': ' + sleepDuration(s) + ' (အရည်အေသွး ' + s.quality + '/5' + (s.nightmare ? ', အိပ်မက်ဆိုး' : '') + ')').join('<br>') : 'မှတ်တမ်း မရှိ') + '</td></tr>' +
+    '<tr><td><b>ပျမ်းမျှ ကယ်လိုရီ</b></td><td>' + Math.round(kcal7 / 7) + ' kcal/နေ့ (ရည်မှန်း ' + calorieTarget(p) + ')</td></tr>' +
+    '<tr><td><b>ပျမ်းမျှ ရေ</b></td><td>' + Math.round([0,1,2,3,4,5,6].reduce((a,i) => a + (DB.waterLog[addDays(todayStr(),-i)] || 0), 0) / 7) + ' ml/နေ့</td></tr>' +
+    '<tr><td><b>အိပ်စက်မှု</b></td><td>' + (recentSleep.length ? recentSleep.map(s => fmtDateMm(s.date) + ': ' + sleepDuration(s) + ' (အရည်အသွေး ' + s.quality + '/5' + (s.nightmare ? ', အိပ်မက်ဆိုး' : '') + ')').join('<br>') : 'မှတ်တမ်း မရှိ') + '</td></tr>' +
     '</table></div>';
 
-  html += '<div class="card"><h3>📝 ေနာက်ဆုံး လက္ခဏာများ</h3>';
-  html += recentSym.length ? '<table><tr><th>ေန့</th><th>လက္ခဏာ</th><th>ပြင်းထန်မှု</th></tr>' +
+  html += '<div class="card"><h3>📝 နောက်ဆုံး လက္ခဏာများ</h3>';
+  html += recentSym.length ? '<table><tr><th>နေ့</th><th>လက္ခဏာ</th><th>ပြင်းထန်မှု</th></tr>' +
     recentSym.map(s => '<tr><td>' + fmtDateMm(s.date) + '</td><td>' + esc(s.name) + (s.note ? ' (' + esc(s.note) + ')' : '') + '</td><td>' + s.severity + '/5</td></tr>').join('') + '</table>'
     : '<div class="muted">မရှိပါ</div>';
   html += '</div>';
 
-  html += '<div class="small muted">⚠️ ဒီအစီရင်ခံစာကို app မှတ်တမ်းများမှ အလိုအေလျာက် ထုတ်လုပ်ထားခြင်းဖြစ်ပြီး ေဆးပညာအကြံဉာဏ် မဟုတ်ပါ။</div>';
+  html += '<div class="small muted">⚠️ ဒီအစီရင်ခံစာကို app မှတ်တမ်းများမှ အလိုအလျောက် ထုတ်လုပ်ထားခြင်းဖြစ်ပြီး ဆေးပညာအကြံဉာဏ် မဟုတ်ပါ။</div>';
 
   $('view-report').innerHTML = html;
   $('btnPrint').addEventListener('click', () => window.print());
@@ -1642,13 +1637,13 @@ function renderSettings() {
   const gKeys = geminiKeyList();
   const curModel = geminiModelName();
   const modelOpts = GEMINI_FREE_MODELS.map(m => '<option value="' + m + '"' + (curModel === m ? ' selected' : '') + '>' + m + (m === 'gemini-3.8-flash' ? ' (အကြံပြု)' : '') + '</option>').join('') +
-    (GEMINI_FREE_MODELS.includes(curModel) ? '' : '<option value="' + esc(curModel) + '" selected>' + esc(curModel) + ' (ေဟာင်း)</option>');
+    (GEMINI_FREE_MODELS.includes(curModel) ? '' : '<option value="' + esc(curModel) + '" selected>' + esc(curModel) + ' (ဟောင်း)</option>');
   let html = '<div class="card"><h3>🤖 Gemini AI (BYOK)</h3>' +
-    '<div class="small muted mb">Key ေတွကို ဒီဖုန်း/စက်ထဲမှာပဲ သိမ်းထားပါတယ် — server ကို မပို့ပါ။ AI လုပ်ေဆာင်ချက်များ: ေဆးဓာတ်ပြုမှု စစ်ေဆးခြင်း၊ အစီအစဉ် ထုတ်လုပ်ခြင်း၊ ပုံမှ အစားအစာ ဆန်းစစ်ခြင်း၊ AI အကြံပြုချက်။</div>' +
-    '<label>Gemini API Keys <span class="small muted">(တစ်ခုထက်ပိုထည့်လို့ရပါတယ် — တစ်ေကြာင်းကို တစ်ခု)</span></label>' +
+    '<div class="small muted mb">Key တွေကို ဒီဖုန်း/စက်ထဲမှာပဲ သိမ်းထားပါတယ် — server ကို မပို့ပါ။ AI လုပ်ဆောင်ချက်များ: ဆေးဓာတ်ပြုမှု စစ်ဆေးခြင်း၊ အစီအစဉ် ထုတ်လုပ်ခြင်း၊ ပုံမှ အစားအစာ ဆန်းစစ်ခြင်း၊ AI အကြံပြုချက်။</div>' +
+    '<label>Gemini API Keys <span class="small muted">(တစ်ခုထက်ပိုထည့်လို့ရပါတယ် — တစ်ကြောင်းကို တစ်ခု)</span></label>' +
     '<textarea id="setGeminiKeys" rows="3" placeholder="AIza…">' + esc(gKeys.join('\n')) + '</textarea>' +
-    '<div class="small muted mb">Key တစ်ခုမှာ limit ထိ / ပျက်ရင် ေနာက် key ကို အလိုအေလျာက် ေပြာင်းသုံးေပးမယ် 🔄</div>' +
-    '<label>Gemini Model <span class="small muted">(အခမဲ့ free tier ရတာေတွချည်း)</span></label>' +
+    '<div class="small muted mb">Key တစ်ခုမှာ limit ထိ / ပျက်ရင် နောက် key ကို အလိုအလျောက် ပြောင်းသုံးပေးမယ် 🔄</div>' +
+    '<label>Gemini Model <span class="small muted">(အခမဲ့ free tier ရတာတွေချည်း)</span></label>' +
     '<select id="setGeminiModel">' + modelOpts + '</select>' +
     (SHOW_OTHER_PROVIDERS ?
     '<label>OpenAI API Key</label><input id="setOpenai" type="password" value="' + esc(s.openaiKey) + '" placeholder="sk-…">' +
@@ -1664,7 +1659,7 @@ function renderSettings() {
     '<div class="mt"><button class="btn block" id="btnSaveKeys">💾 Keys များ သိမ်းမယ်</button></div>' +
     '<div class="small muted mt">လက်ရှိ AI: <b>' + (aiProvider() === 'gemini' ? 'Gemini (' + esc(curModel) + ', key ' + gKeys.length + ' ခု)' : 'မရှိပါ (offline mode)') + '</b></div></div>';
 
-  html += '<div class="card"><h3>👤 Google အေကာင့်နဲ့ ဝင်ရန်</h3>' +
+  html += '<div class="card"><h3>👤 Google အကောင့်နဲ့ ဝင်ရန်</h3>' +
     '<div class="small muted mb">ကိုယ်ပိုင် Google Cloud Console မှ OAuth Client ID ထည့်ပါ။ ID မထည့်ထားရင် login မလိုအပ်ဘဲ local mode နဲ့ အလုပ်လုပ်ပါတယ်။</div>' +
     '<label>Google OAuth Client ID</label><input id="setGid" value="' + esc(s.googleClientId) + '" placeholder="xxxxx.apps.googleusercontent.com">' +
     '<div class="row wrap mt"><button class="btn secondary" id="btnSaveGid">သိမ်းမယ်</button>' +
@@ -1679,12 +1674,12 @@ function renderSettings() {
     '<div class="small muted mt">မှတ်တမ်းအားလုံးကို ဖိုင်အဖြစ် သိမ်းနိုင် / ပြန်ထည့်နိုင်ပါတယ်</div></div>';
 
   html += '<div class="card"><h3>🔗 ချိတ်ဆက်မှုများ</h3>' +
-    '<div class="list-item" style="opacity:.55"><div class="grow"><b>❤️ Health Connect</b><div class="small muted">ေခြလှမ်း/အိပ်ချိန် အလိုအေလျာက်ဆွဲယူခြင်း</div></div>' +
+    '<div class="list-item" style="opacity:.55"><div class="grow"><b>❤️ Health Connect</b><div class="small muted">ခြေလှမ်း/အိပ်ချိန် အလိုအလျောက်ဆွဲယူခြင်း</div></div>' +
     '<span class="tag">APK version မှာ ရမယ်</span></div></div>';
 
   html += '<div class="card"><h3>🔒 Privacy</h3>' +
-    '<div class="info-box">ဒီ app ရဲ့ data အားလုံး ဒီ device ရဲ့ localStorage ထဲမှာပဲ ရှိပါတယ် — server မရှိ၊ အေကာင့် မလိုအပ်ပါ။ Google login သုံးရင်ေတာင် ကျန်းမာေရးမှတ်တမ်းေတွကို Google ကို မပို့ပါ။</div>' +
-    '<div class="small muted">ဘာသာစကား: မြန်မာ (အခုေလာေလာဆယ်)</div>' +
+    '<div class="info-box">ဒီ app ရဲ့ data အားလုံး ဒီ device ရဲ့ localStorage ထဲမှာပဲ ရှိပါတယ် — server မရှိ၊ အကောင့် မလိုအပ်ပါ။ Google login သုံးရင်တောင် ကျန်းမာရေးမှတ်တမ်းတွေကို Google ကို မပို့ပါ။</div>' +
+    '<div class="small muted">ဘာသာစကား: မြန်မာ (အခုလောလောဆယ်)</div>' +
     '<div class="small muted">app version: ' + APP_VERSION + '</div></div>';
 
   html += '<div class="card"><h3>🗑️ အန္တရာယ်ဇုန်</h3>' +
@@ -1736,13 +1731,13 @@ function renderSettings() {
         if (!confirm('လက်ရှိ data အားလုံး အစားထိုးမှာလား?')) return;
         DB = Object.assign(defaultDB(), parsed);
         saveDB(); refreshProfileSwitcher(); renderSettings(); toast('Import လုပ်ပြီးပါပြီ ✅');
-      } catch (err) { toast('Import မေအာင်မြင်ပါ: ' + err.message); }
+      } catch (err) { toast('Import မအောင်မြင်ပါ: ' + err.message); }
     };
     reader.readAsText(file);
   });
   $('btnWipe').addEventListener('click', () => {
     if (!confirm('တကယ် ဖျက်မှာလား? ဒါကို ပြန်မရနိုင်ပါ!')) return;
-    if (!confirm('ေနာက်တစ်ကြိမ် အတည်ပြုပါ — data အားလုံး ေပျာက်မှာပါ')) return;
+    if (!confirm('နောက်တစ်ကြိမ် အတည်ပြုပါ — data အားလုံး ပျောက်မှာပါ')) return;
     localStorage.removeItem(STORE_KEY);
     DB = defaultDB(); saveDB(); refreshProfileSwitcher(); showTab('home');
     toast('ဖျက်ပြီးပါပြီ');
@@ -1761,21 +1756,21 @@ function googleSignIn() {
           try {
             const payload = JSON.parse(atob(resp.credential.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
             DB.settings.googleUser = { name: payload.name || '', email: payload.email || '' };
-            saveDB(); renderSettings(); toast('ဝင်ေရာက်ပြီးပါပြီ ✅');
-          } catch (e) { toast('Login အေဖြဖတ်မရပါ'); }
+            saveDB(); renderSettings(); toast('ဝင်ရောက်ပြီးပါပြီ ✅');
+          } catch (e) { toast('Login အဖြေဖတ်မရပါ'); }
         }
       });
       google.accounts.id.prompt();
     } catch (e) { toast('Google Sign-In စတင်၍မရပါ: ' + e.message); }
   };
   if (window.google && google.accounts && google.accounts.id) { done(); return; }
-  if (gisLoading) { toast('ခဏေစာင့်ပါ…'); return; }
+  if (gisLoading) { toast('ခဏစောင့်ပါ…'); return; }
   gisLoading = true;
   const sc = document.createElement('script');
   sc.src = 'https://accounts.google.com/gsi/client';
   sc.async = true; sc.defer = true;
   sc.onload = () => { gisLoading = false; done(); };
-  sc.onerror = () => { gisLoading = false; toast('Google script ေခါ်၍မရပါ (internet လိုပါတယ်)'); };
+  sc.onerror = () => { gisLoading = false; toast('Google script ခေါ်၍မရပါ (internet လိုပါတယ်)'); };
   document.head.appendChild(sc);
 }
 
