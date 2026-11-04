@@ -42,7 +42,7 @@ function fmtTimeMm(hm) { // 24h -> Burmese 12h label
 
 // ---------------- store (localStorage, versioned) ----------------
 const STORE_KEY = 'healthAppV1';
-const APP_VERSION = '2026-11-05b'; // bump on every deploy; shown in Settings
+const APP_VERSION = '2026-11-05c'; // bump on every deploy; shown in Settings
 function defaultDB() {
   const p1 = uid();
   return {
@@ -114,7 +114,6 @@ function closeModal() { $('modalOverlay').classList.add('hidden'); }
 // ---------------- navigation ----------------
 const TABS = [
   { id: 'home',      ico: '🏠', label: 'ပင်မ' },
-  { id: 'profile',   ico: '👤', label: 'ကျန်းမာရေးဖိုင်' },
   { id: 'meds',      ico: '💊', label: 'ဆေးဝါးများ' },
   { id: 'plan',      ico: '🗓️', label: 'အစီအစဉ်' },
   { id: 'food',      ico: '🍚', label: 'အစားအသောက်' },
@@ -122,7 +121,8 @@ const TABS = [
   { id: 'progress',  ico: '📊', label: 'တိုးတက်မှု' },
   { id: 'symptom',   ico: '📝', label: 'လက္ခဏာ' },
   { id: 'emergency', ico: '🚨', label: 'အရေးပေါ်' },
-  { id: 'period',    ico: '🩸', label: 'ရာသီစက်' },
+  { id: 'period',    ico: '🩸', label: 'ရာသီစက်ဝန်း�' },
+  { id: 'profile',   ico: '👤', label: 'ကျန်းမာရေးဖိုင်' },
   { id: 'report',    ico: '🖨️', label: 'အစီရင်ခံစာ' },
   { id: 'settings',  ico: '⚙️', label: 'ဆက်တင်' },
 ];
@@ -651,7 +651,7 @@ function renderProfile() {
   html += '<label>ကျန်းမာရေး ရည်မှန်းချက်</label><select id="pfGoal">' +
     Object.keys(GOAL_LABEL).map(g => '<option value="' + g + '"' + (p.goal === g ? ' selected' : '') + '>' + GOAL_LABEL[g] + '</option>').join('') +
     '</select>';
-  html += '<div class="check-line"><input type="checkbox" id="pfPeriod"' + (p.periodEnabled ? ' checked' : '') + '><label for="pfPeriod" style="margin:0">ရာသီစက် မှတ်တမ်း သုံးမယ် (အမျိုးသမီးများအတွက်)</label></div>';
+  html += '<div class="check-line"><input type="checkbox" id="pfPeriod"' + (p.periodEnabled ? ' checked' : '') + '><label for="pfPeriod" style="margin:0">ရာသီစက်ဝန်း� မှတ်တမ်း သုံးမယ် (အမျိုးသမီးများအတွက်)</label></div>';
 
   html += '<h4>နာတာရှည် ရောဂါရာဇဝင်</h4><div id="pfConditions">' +
     p.conditions.map((c, i) => tagHtml('cond', i, c)).join('') + '</div>' +
@@ -1525,13 +1525,13 @@ function renderEmergency() {
 }
 
 // ============================================================
-// VIEW: 🩸 ရာသီစက် (Period Tracker)
+// VIEW: 🩸 ရာသီစက်ဝန်း� (Period Tracker)
 // ============================================================
 function renderPeriod() {
   const p = activeProfile();
   if (!p.periodEnabled) {
-    $('view-period').innerHTML = '<div class="card"><h3>🩸 ရာသီစက် မှတ်တမ်း</h3>' +
-      '<div class="info-box">ဒီ module ကို သုံးဖို့ <b>ကျန်းမာရေးဖိုင်</b> tab မှာ “ရာသီစက် မှတ်တမ်း သုံးမယ်” ကို အမှန်ခြစ်ပေးပါ။</div>' +
+    $('view-period').innerHTML = '<div class="card"><h3>🩸 ရာသီစက်ဝန်း� မှတ်တမ်း</h3>' +
+      '<div class="info-box">ဒီ module ကို သုံးဖို့ <b>ကျန်းမာရေးဖိုင်</b> tab မှာ “ရာသီစက်ဝန်း� မှတ်တမ်း သုံးမယ်” ကို အမှန်ခြစ်ပေးပါ။</div>' +
       '<button class="btn" id="btnEnablePeriod">ဖွင့်မယ်</button></div>';
     $('btnEnablePeriod').addEventListener('click', () => {
       p.periodEnabled = true; saveDB(); renderPeriod(); toast('ဖွင့်ပြီးပါပြီ ✅');
@@ -1554,7 +1554,7 @@ function renderPeriod() {
       'နောက်တစ်ကြိမ် ခန့်မှန်း: <b>' + fmtDateMm(next) + '</b>' +
       (daysLeft >= 0 ? ' (' + daysLeft + ' ရက် အလို)' : ' (' + (-daysLeft) + ' ရက် ကျော်လွန်)') + '</div>';
   }
-  let html = '<div class="card"><div class="row space-between"><h3>🩸 ရာသီစက် မှတ်တမ်း</h3>' +
+  let html = '<div class="card"><div class="row space-between"><h3>🩸 ရာသီစက်ဝန်း� မှတ်တမ်း</h3>' +
     '<button class="btn small-btn" id="btnAddPeriod">＋ ထည့်မယ်</button></div>' + predHtml;
   if (!logs.length) html += '<div class="muted mt">မရှိသေးပါ</div>';
   logs.slice(0, 12).forEach(l => {
@@ -1564,7 +1564,7 @@ function renderPeriod() {
   html += '</div>';
   $('view-period').innerHTML = html;
   $('btnAddPeriod').addEventListener('click', () => {
-    openModal('🩸 ရာသီစက် မှတ်တမ်း',
+    openModal('🩸 ရာသီစက်ဝန်း� မှတ်တမ်း',
       '<label>စတင်သည့်နေ့</label><input id="mPDate" type="date" value="' + todayStr() + '">' +
       '<div class="mt"><button class="btn block" id="mPSave2">သိမ်းမယ်</button></div>');
     $('mPSave2').addEventListener('click', () => {
@@ -1788,10 +1788,22 @@ const RENDER = {
   food: renderFood, remind: renderRemind, progress: renderProgress, symptom: renderSymptom,
   emergency: renderEmergency, period: renderPeriod, report: renderReport, settings: renderSettings,
 };
+// ---------------- local time clock (header) ----------------
+function tickClock() {
+  const el = $('clock');
+  if (!el) return;
+  const d = new Date();
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  el.textContent = hh + ':' + mm;
+}
+
 function init() {
   loadDB();
   buildTabbar();
   refreshProfileSwitcher();
+  tickClock();
+  setInterval(tickClock, 20000); // refresh clock every 20s
   $('profileSwitcher').addEventListener('change', (e) => switchProfile(e.target.value));
   $('btnAddProfile').addEventListener('click', () => { showTab('profile'); });
   $('modalClose').addEventListener('click', closeModal);

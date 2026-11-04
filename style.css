@@ -34,6 +34,7 @@ body{
   padding:10px 12px; gap:8px;
 }
 .topbar-title{font-weight:700; font-size:1.05rem; white-space:nowrap;}
+.topbar-clock{font-size:.85rem; opacity:.92; white-space:nowrap;}
 .topbar-profile{display:flex; align-items:center; gap:6px; min-width:0;}
 #profileSwitcher{
   max-width:46vw; padding:8px 6px; border-radius:10px; border:none;
