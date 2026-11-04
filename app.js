@@ -1088,7 +1088,12 @@ function renderFood() {
     '</div>' +
     '<div id="foodPhotoPane" style="display:none">' +
       '<label>အစားအစာ ပုံရိုက်ရန် / ရွေးရန်</label>' +
-      '<input id="foodPhoto" type="file" accept="image/*" capture="environment">' +
+      '<div class="row" style="gap:8px">' +
+        '<button class="btn" id="btnFoodCamera" style="flex:1">📷 ရိုက်မယ်</button>' +
+        '<button class="btn secondary" id="btnFoodGallery" style="flex:1">🖼️ ရွေးမယ်</button>' +
+      '</div>' +
+      '<input id="foodPhotoCam" type="file" accept="image/*" capture="environment" style="display:none">' +
+      '<input id="foodPhotoGal" type="file" accept="image/*" style="display:none">' +
       '<div id="foodPhotoPrev" class="mt"></div><div id="foodAiResult" class="mt"></div>' +
       (geminiKeyList().length
         ? '<div class="mt"><button class="btn block" id="btnAnalyzeFood">✨ AI နဲ့ ပုံကို ဆန်းစစ်မယ်</button></div>'
@@ -1146,8 +1151,9 @@ function renderFood() {
       DB.foodLog = DB.foodLog.filter(x => x.id !== b.dataset.delfood);
       saveDB(); renderFood();
     }));
-  $('foodPhoto').addEventListener('change', (e) => {
-    const file = e.target.files[0];
+  // FIX 2026-11-05: capture="environment" က camera ပဲပေါ်စေလို့ နှစ်ခွဲထားတယ် —
+  // "ရိုက်မယ်" = camera တိုက်ရိုက်, "ရွေးမယ်" = gallery/storage ရွေးချယ်မှု
+  const handleFoodPhotoFile = (file) => {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
@@ -1156,7 +1162,11 @@ function renderFood() {
       $('foodAiResult').innerHTML = '';
     };
     reader.readAsDataURL(file);
-  });
+  };
+  $('btnFoodCamera').addEventListener('click', () => $('foodPhotoCam').click());
+  $('btnFoodGallery').addEventListener('click', () => $('foodPhotoGal').click());
+  $('foodPhotoCam').addEventListener('change', (e) => { handleFoodPhotoFile(e.target.files[0]); e.target.value = ''; });
+  $('foodPhotoGal').addEventListener('change', (e) => { handleFoodPhotoFile(e.target.files[0]); e.target.value = ''; });
   const analyzeBtn = $('btnAnalyzeFood');
   if (analyzeBtn) analyzeBtn.addEventListener('click', async () => {
     if (!foodPhotoDataUrl) { toast('အရင်ပုံ ရွေးပေးပါ'); return; }
