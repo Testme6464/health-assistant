@@ -42,7 +42,7 @@ function fmtTimeMm(hm) { // 24h -> Burmese 12h label
 
 // ---------------- store (localStorage, versioned) ----------------
 const STORE_KEY = 'healthAppV1';
-const APP_VERSION = '2026-11-05c'; // bump on every deploy; shown in Settings
+const APP_VERSION = '2026-11-05d'; // bump on every deploy; shown in Settings
 function defaultDB() {
   const p1 = uid();
   return {
@@ -435,7 +435,7 @@ function drawLineChart(canvasId, series, opts) {
   let allY = [];
   series.forEach(s => s.points.forEach(p => { if (p.y != null) allY.push(p.y); }));
   if (!allY.length) {
-    ctx.fillStyle = '#6b7a74'; ctx.font = '14px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillStyle = '#66707e'; ctx.font = '14px sans-serif'; ctx.textAlign = 'center';
     ctx.fillText('မှတ်တမ်း မရှိသေးပါ', W / 2, H / 2);
     return;
   }
@@ -448,7 +448,7 @@ function drawLineChart(canvasId, series, opts) {
   const X = (i) => padL + (n === 1 ? iw / 2 : (i / (n - 1)) * iw);
   const Y = (v) => padT + ih - ((v - min) / (max - min)) * ih;
   // grid + y labels
-  ctx.strokeStyle = '#e3eae7'; ctx.fillStyle = '#6b7a74'; ctx.font = '11px sans-serif';
+  ctx.strokeStyle = '#e3e9f2'; ctx.fillStyle = '#66707e'; ctx.font = '11px sans-serif';
   ctx.textAlign = 'right'; ctx.lineWidth = 1;
   for (let g = 0; g <= 4; g++) {
     const v = min + (max - min) * g / 4;
@@ -486,7 +486,7 @@ function drawLineChart(canvasId, series, opts) {
   let lx = padL;
   series.forEach(s => {
     ctx.fillStyle = s.color; ctx.fillRect(lx, 6, 14, 4);
-    ctx.fillStyle = '#1c2421'; ctx.fillText(s.label, lx + 18, 12);
+    ctx.fillStyle = '#1c232b'; ctx.fillText(s.label, lx + 18, 12);
     lx += ctx.measureText(s.label).width + 44;
   });
 }
@@ -577,7 +577,7 @@ function renderHome() {
   });
 
   drawLineChart('chartHomeWeight', [{
-    label: 'kg', color: '#0d7a5f',
+    label: 'kg', color: '#1f6fb2',
     points: wl.map(w => ({ x: w.date.slice(5), y: +w.weight }))
   }], { unit: 'kg' });
 }
@@ -1371,7 +1371,7 @@ function renderProgress() {
 
   const wl = DB.weightLog.filter(w => w.profileId === p.id).sort((a, b) => a.date < b.date ? -1 : 1);
   drawLineChart('chartWeight', [{
-    label: 'ကိုယ်အလေးချိန် (kg)', color: '#0d7a5f',
+    label: 'ကိုယ်အလေးချိန် (kg)', color: '#1f6fb2',
     points: wl.map(w => ({ x: w.date.slice(5), y: +w.weight }))
   }], { unit: 'kg' });
   const h = parseFloat(p.height) || 0;

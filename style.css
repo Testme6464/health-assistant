@@ -11,10 +11,10 @@
   font-weight:700; font-style:normal; font-display:swap;
 }
 :root{
-  --green:#0d7a5f; --green-dark:#095c47; --green-soft:#e3f3ee;
-  --bg:#f4f7f6; --card:#ffffff; --text:#1c2421; --muted:#6b7a74;
-  --border:#dde6e2; --red:#d64545; --red-soft:#fdeaea;
-  --amber:#c07f10; --amber-soft:#fdf3df; --blue:#1f6fb2; --blue-soft:#e7f1fb;
+  --blue:#1f6fb2; --blue-dark:#174a75; --blue-soft:#e7f1fb;
+  --bg:#f4f7fb; --card:#ffffff; --text:#1c232b; --muted:#66707e;
+  --border:#d9e2ee; --red:#d64545; --red-soft:#fdeaea;
+  --amber:#c07f10; --amber-soft:#fdf3df;
   --radius:14px; --tab-h:64px;
 }
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
@@ -29,7 +29,7 @@ body{
 /* ---------- top bar ---------- */
 .topbar{
   position:sticky; top:0; z-index:50;
-  background:var(--green); color:#fff;
+  background:var(--blue); color:#fff;
   display:flex; align-items:center; justify-content:space-between;
   padding:10px 12px; gap:8px;
 }
@@ -54,7 +54,7 @@ body{
   background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
   padding:14px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,.05);
 }
-.card h3{margin:0 0 10px; font-size:1.05rem; color:var(--green-dark);}
+.card h3{margin:0 0 10px; font-size:1.05rem; color:var(--blue-dark);}
 .card h4{margin:12px 0 8px; font-size:0.98rem;}
 .row{display:flex; align-items:center; gap:8px;}
 .space-between{justify-content:space-between;}
@@ -68,11 +68,11 @@ body{
 .btn{
   display:inline-block; border:none; border-radius:12px; cursor:pointer;
   padding:12px 18px; font-size:1rem; font-weight:600; min-height:48px;
-  background:var(--green); color:#fff;
+  background:var(--blue); color:#fff;
 }
 .btn:active{transform:scale(.98);}
 .btn.block{width:100%; text-align:center;}
-.btn.secondary{background:#eef2f0; color:var(--text);}
+.btn.secondary{background:#edf1f8; color:var(--text);}
 .btn.danger{background:var(--red);}
 .btn.warn{background:var(--amber);}
 .btn.small-btn{padding:8px 12px; min-height:40px; font-size:0.9rem;}
@@ -99,18 +99,18 @@ input[type="time"]{width:auto;}
 }
 .list-item:last-child{border-bottom:none;}
 .tag{
-  display:inline-block; background:var(--green-soft); color:var(--green-dark);
+  display:inline-block; background:var(--blue-soft); color:var(--blue-dark);
   border-radius:20px; padding:4px 12px; margin:3px 4px 3px 0; font-size:0.88rem;
 }
 .tag .x{cursor:pointer; margin-left:6px; color:var(--red); font-weight:700;}
 .alert{background:var(--red-soft); border:1px solid #f3c1c1; color:#8f2424; border-radius:12px; padding:10px 12px; margin-bottom:10px;}
 .warn-box{background:var(--amber-soft); border:1px solid #eed9a8; color:#7a5410; border-radius:12px; padding:10px 12px; margin-bottom:10px;}
 .info-box{background:var(--blue-soft); border:1px solid #c3daf0; color:#174a75; border-radius:12px; padding:10px 12px; margin-bottom:10px;}
-.ok-box{background:var(--green-soft); border:1px solid #bfe3d6; color:var(--green-dark); border-radius:12px; padding:10px 12px; margin-bottom:10px;}
+.ok-box{background:var(--blue-soft); border:1px solid #c3daf0; color:var(--blue-dark); border-radius:12px; padding:10px 12px; margin-bottom:10px;}
 
 /* ---------- progress bars ---------- */
-.progress{height:14px; background:#e6eeeb; border-radius:8px; overflow:hidden; margin:6px 0;}
-.progress > div{height:100%; background:var(--green); border-radius:8px; transition:width .3s;}
+.progress{height:14px; background:#e5ebf3; border-radius:8px; overflow:hidden; margin:6px 0;}
+.progress > div{height:100%; background:var(--blue); border-radius:8px; transition:width .3s;}
 .progress.over > div{background:var(--red);}
 
 /* ---------- bottom tab bar (horizontally scrollable, 12 tabs) ---------- */
@@ -127,7 +127,7 @@ input[type="time"]{width:auto;}
   font-size:0.68rem; color:var(--muted); padding:6px 4px; gap:2px;
 }
 .tab .ico{font-size:1.35rem; line-height:1;}
-.tab.active{color:var(--green); font-weight:700;}
+.tab.active{color:var(--blue); font-weight:700;}
 .tab.active .ico{transform:scale(1.12);}
 
 /* ---------- modal ---------- */
@@ -142,14 +142,14 @@ input[type="time"]{width:auto;}
 }
 .modal-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;}
 .modal-title{font-weight:700; font-size:1.1rem;}
-#modalClose{background:#eef2f0; color:var(--text);}
+#modalClose{background:#edf1f8; color:var(--text);}
 .modal-body{padding-bottom:20px;}
 
 /* ---------- toast ---------- */
 .toast{
   position:fixed; left:50%; transform:translateX(-50%);
   bottom:calc(var(--tab-h) + 16px); z-index:200;
-  background:#1c2421; color:#fff; padding:12px 18px; border-radius:12px;
+  background:#1c232b; color:#fff; padding:12px 18px; border-radius:12px;
   font-size:0.95rem; max-width:90vw; text-align:center;
 }
 .toast.hidden{display:none;}
@@ -157,7 +157,7 @@ input[type="time"]{width:auto;}
 /* ---------- tables ---------- */
 table{width:100%; border-collapse:collapse; font-size:0.92rem;}
 th,td{padding:8px 6px; border-bottom:1px solid var(--border); text-align:left;}
-th{background:#f0f5f3;}
+th{background:#eff3fa;}
 
 /* ---------- charts ---------- */
 canvas.chart{width:100%; height:220px; display:block; background:#fff; border:1px solid var(--border); border-radius:12px;}
@@ -165,11 +165,11 @@ canvas.chart{width:100%; height:220px; display:block; background:#fff; border:1p
 /* ---------- med checklist ---------- */
 .med-check{display:flex; align-items:center; gap:10px; padding:12px 4px; border-bottom:1px solid var(--border);}
 .med-check .time{font-weight:700; min-width:64px;}
-.med-check.taken{background:var(--green-soft); border-radius:10px;}
+.med-check.taken{background:var(--blue-soft); border-radius:10px;}
 .med-check.missed{background:var(--red-soft); border-radius:10px;}
 .check-btns{display:flex; gap:6px; margin-left:auto;}
 .check-btns button{border:1px solid var(--border); background:#fff; border-radius:10px; padding:8px 12px; font-size:0.9rem; cursor:pointer; min-height:42px;}
-.check-btns button.on-taken{background:var(--green); color:#fff; border-color:var(--green);}
+.check-btns button.on-taken{background:var(--blue); color:#fff; border-color:var(--blue);}
 .check-btns button.on-missed{background:var(--red); color:#fff; border-color:var(--red);}
 
 /* ---------- water buttons ---------- */
