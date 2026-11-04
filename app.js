@@ -42,7 +42,7 @@ function fmtTimeMm(hm) { // 24h -> Burmese 12h label
 
 // ---------------- store (localStorage, versioned) ----------------
 const STORE_KEY = 'healthAppV1';
-const APP_VERSION = '2026-11-05d'; // bump on every deploy; shown in Settings
+const APP_VERSION = '2026-11-05e'; // bump on every deploy; shown in Settings
 function defaultDB() {
   const p1 = uid();
   return {
@@ -515,18 +515,24 @@ function renderHome() {
     '<h3>ဒီနေ့ အကျဉ်းချုပ်</h3><span class="muted">' + fmtDateMm(t) + '</span></div>' +
     '<div class="muted">' + esc(p.name) + ' · ရည်မှန်းချက်: ' + GOAL_LABEL[p.goal || 'maintain'] + '</div></div>';
 
-  // calories
-  html += '<div class="card"><h3>🍚 ကယ်လိုရီ</h3>' +
-    '<div class="row space-between"><b>' + kcalToday + ' kcal</b><span class="muted">ရည်မှန်း ' + kcalTarget + ' kcal</span></div>' +
-    '<div class="progress' + (kcalToday > kcalTarget ? ' over' : '') + '"><div style="width:' + kcalPct + '%"></div></div>' +
-    coachingMsg(p, kcalToday, kcalTarget) + '</div>';
+  // calories — liquid fill card (fills little by little as kcal increases)
+  html += '<div class="card fill-card">' +
+    '<div class="fill fill-kcal" style="height:' + kcalPct + '%"></div>' +
+    '<div class="fill-content"><div class="row space-between"><h3>🍚 ကယ်လိုရီ</h3>' +
+    '<span class="pct-badge">' + kcalPct + '%</span></div>' +
+    '<div class="big-num">' + kcalToday + ' <small>kcal</small></div>' +
+    '<div class="muted">ရည်မှန်း ' + kcalTarget + ' kcal</div></div></div>' +
+    coachingMsg(p, kcalToday, kcalTarget);
 
-  // water
-  html += '<div class="card"><h3>💧 ရေ</h3>' +
-    '<div class="row space-between"><b>' + waterToday + ' ml</b><span class="muted">ရည်မှန်း ' + waterTarget + ' ml</span></div>' +
-    '<div class="progress"><div style="width:' + waterPct + '%"></div></div>' +
-    '<div class="water-btns"><button class="btn small-btn" data-water="250">+ 250 ml</button>' +
-    '<button class="btn small-btn" data-water="500">+ 500 ml</button></div></div>';
+  // water — liquid fill card (fills little by little as ml increases)
+  html += '<div class="card fill-card">' +
+    '<div class="fill fill-water" style="height:' + waterPct + '%"></div>' +
+    '<div class="fill-content"><div class="row space-between"><h3>💧 ရေ</h3>' +
+    '<span class="pct-badge">' + waterPct + '%</span></div>' +
+    '<div class="big-num">' + waterToday + ' <small>ml</small></div>' +
+    '<div class="muted">ရည်မှန်း ' + waterTarget + ' ml</div>' +
+    '<div class="water-btns"><button class="btn" data-water="250">+ 250 ml</button>' +
+    '<button class="btn" data-water="500">+ 500 ml</button></div></div></div>';
 
   // meds
   html += '<div class="card"><h3>💊 ဒီနေ့ ဆေး</h3>';

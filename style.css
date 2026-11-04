@@ -176,6 +176,16 @@ canvas.chart{width:100%; height:220px; display:block; background:#fff; border:1p
 .water-btns{display:flex; gap:10px; margin:8px 0;}
 .water-btns .btn{flex:1;}
 
+/* ---------- liquid fill cards (home: calories & water) ---------- */
+.fill-card{position:relative; overflow:hidden;}
+.fill{position:absolute; left:0; right:0; bottom:0; transition:height .8s ease; border-radius:14px 14px 0 0;}
+.fill-water{background:linear-gradient(180deg,#a9cdf3,#6ea8e6);}
+.fill-kcal{background:linear-gradient(180deg,#f9dfae,#f2c169);}
+.fill-content{position:relative; z-index:1;}
+.big-num{font-size:2.1rem; font-weight:800; margin:2px 0; line-height:1.1;}
+.big-num small{font-size:.95rem; font-weight:400; color:var(--muted);}
+.pct-badge{background:rgba(255,255,255,.75); border:1px solid var(--border); border-radius:20px; padding:3px 12px; font-size:.82rem; font-weight:700;}
+
 /* ---------- print ---------- */
 #printOnly{display:none;}
 @media print{
