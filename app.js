@@ -65,7 +65,9 @@ function defaultDB() {
     plans: {},           // profileId -> {month,createdAt,ai,meals,sleep,workout,diet,tip,rawAi}
     reminders: { waterEnabled: true, waterInterval: 120, waterStart: '08:00', waterEnd: '21:00',
                  medEnabled: true, sleepEnabled: true, bedtime: '22:30' },
-    settings: { geminiKey: '', geminiModel: 'gemini-3.8-flash', openaiKey: '', claudeKey: '', googleClientId: '',
+    settings: { geminiKey: '', geminiModel: 'gemini-3.8-flash', openaiKey: '', claudeKey: '',
+                customBase: '', customKey: '', customModel: '', pollinations: false,
+                googleClientId: '',
                 googleUser: null, calorieTargetMode: 'auto', calorieTarget: 2000, waterTargetMl: 2000 }
   };
 }
@@ -168,9 +170,11 @@ const GOAL_LABEL = { lose: 'ကိုယ်အလေးချိန်လျှ�
 // ---------------- AI (BYOK) ----------------
 function aiProvider() {
   const s = DB.settings;
+  if (s.customKey && s.customBase) return 'custom';
   if (s.geminiKey) return 'gemini';
   if (s.openaiKey) return 'openai';
   if (s.claudeKey) return 'claude';
+  if (s.pollinations) return 'pollinations';
   return null;
 }
 // User-chosen Gemini model; falls back to gemini-3.8-flash for old saved settings.
@@ -182,7 +186,7 @@ function geminiModelName() {
 // network failures and hung requests. Free-tier models often spike; retry a few
 // times with growing delays before giving up. onRetry(attempt, total) is called
 // before each retry so the UI can show progress instead of looking stuck.
-async function geminiFetch(url, opts, tries, onRetry) {
+async function fetchWithRetry(url, opts, tries, onRetry) {
   tries = tries || 3;
   const TIMEOUT_MS = 25000;
   let lastErr = new Error('AI ခေါ်ဆို၍မရပါ');
@@ -222,7 +226,7 @@ async function aiChat(systemPrompt, userPrompt, onRetry) {
   const s = DB.settings, prov = aiProvider();
   if (!prov) throw new Error('API key မရှိပါ');
   if (prov === 'gemini') {
-    const j = await geminiFetch('https://generativelanguage.googleapis.com/v1beta/models/' + geminiModelName() + ':generateContent?key=' + encodeURIComponent(s.geminiKey), {
+    const j = await fetchWithRetry('https://generativelanguage.googleapis.com/v1beta/models/' + geminiModelName() + ':generateContent?key=' + encodeURIComponent(s.geminiKey), {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ system_instruction: { parts: [{ text: systemPrompt }] },
         contents: [{ parts: [{ text: userPrompt }] }] })
@@ -239,6 +243,28 @@ async function aiChat(systemPrompt, userPrompt, onRetry) {
     const j = await r.json();
     if (!r.ok) throw new Error((j.error && j.error.message) || ('HTTP ' + r.status));
     return j.choices[0].message.content;
+  }
+  // custom OpenAI-compatible provider (Groq, OpenRouter, ...): base URL + key + model
+  if (prov === 'custom') {
+    const base = (s.customBase || '').replace(/\/+$/, '');
+    const j = await fetchWithRetry(base + '/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + s.customKey },
+      body: JSON.stringify({ model: (s.customModel || '').trim() || 'openai/gpt-oss-20b',
+        messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }] })
+    }, 3, onRetry);
+    return j.choices[0].message.content;
+  }
+  // pollinations: free, no signup, no key — OpenAI-compatible endpoint
+  if (prov === 'pollinations') {
+    const j = await fetchWithRetry('https://text.pollinations.ai/openai', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'openai',
+        messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }] })
+    }, 3, onRetry);
+    if (j && j.choices && j.choices[0] && j.choices[0].message)
+      return j.choices[0].message.content;
+    return (typeof j === 'string') ? j : JSON.stringify(j);
   }
   // claude
   const r = await fetch('https://api.anthropic.com/v1/messages', {
@@ -261,7 +287,7 @@ async function geminiFoodVision(dataUrl, onRetry) {
   const prompt = 'Analyze this food photo. Identify each visible food item and estimate calories ' +
     'for a typical serving. Reply ONLY with JSON: {"items":[{"name":"<Burmese name>","kcal":<number>}],"totalKcal":<number>}. ' +
     'Use Burmese (Myanmar script) for names. If no food is visible, return {"items":[],"totalKcal":0}.';
-  const j = await geminiFetch('https://generativelanguage.googleapis.com/v1beta/models/' + geminiModelName() + ':generateContent?key=' + encodeURIComponent(s.geminiKey), {
+  const j = await fetchWithRetry('https://generativelanguage.googleapis.com/v1beta/models/' + geminiModelName() + ':generateContent?key=' + encodeURIComponent(s.geminiKey), {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ contents: [{ parts: [{ text: prompt },
       { inline_data: { mime_type: m[1], data: m[2] } }] }] })
@@ -1476,8 +1502,15 @@ function renderSettings() {
     '<div class="small muted mb">ကြိုက်တဲ့ model နာမည်ကို ရွေးချယ်နိုင် / ကိုယ်တိုင် ရိုက်ထည့်နိုင်ပါတယ်</div>' +
     '<label>OpenAI API Key</label><input id="setOpenai" type="password" value="' + esc(s.openaiKey) + '" placeholder="sk-…">' +
     '<label>Claude API Key</label><input id="setClaude" type="password" value="' + esc(s.claudeKey) + '" placeholder="sk-ant-…">' +
+    '<div class="mt mb"><b>🆓 အခမဲ့ AI (OpenAI-compatible)</b>' +
+    '<div class="small muted">Groq — console.groq.com မှာ အခမဲ့ key ယူလို့ရပါတယ် (ကတ်မလို, gsk_ နဲ့စပါတယ်)။ OpenRouter — openrouter.ai (အခမဲ့ model များ)။ Custom key ထည့်ထားရင် အဲဒါကို အရင်ဆုံးသုံးမယ်။</div></div>' +
+    '<label>Base URL</label><input id="setCustomBase" value="' + esc(s.customBase) + '" placeholder="https://api.groq.com/openai/v1">' +
+    '<label>API Key</label><input id="setCustomKey" type="password" value="' + esc(s.customKey) + '" placeholder="gsk_…">' +
+    '<label>Model</label><input id="setCustomModel" value="' + esc(s.customModel) + '" placeholder="openai/gpt-oss-20b">' +
+    '<label class="row mt" style="gap:8px;align-items:flex-start"><input type="checkbox" id="setPollinations" style="width:auto;margin-top:4px"' + (s.pollinations ? ' checked' : '') + '>' +
+    '<span>🆓 <b>Pollinations</b> — key မလို, အခမဲ့သုံးမယ် (တခြား key မရှိရင် အရန်အဖြစ် သုံးမယ်)</span></label>' +
     '<div class="mt"><button class="btn block" id="btnSaveKeys">💾 Keys များ သိမ်းမယ်</button></div>' +
-    '<div class="small muted mt">လက်ရှိ AI: <b>' + ({ gemini: 'Gemini (' + esc(geminiModelName()) + ')', openai: 'OpenAI', claude: 'Claude' }[aiProvider()] || 'မရှိပါ (offline mode)') + '</b></div></div>';
+    '<div class="small muted mt">လက်ရှိ AI: <b>' + ({ gemini: 'Gemini (' + esc(geminiModelName()) + ')', openai: 'OpenAI', claude: 'Claude', custom: 'Custom (' + esc(s.customModel || 'default model') + ')', pollinations: 'Pollinations (အခမဲ့)' }[aiProvider()] || 'မရှိပါ (offline mode)') + '</b></div></div>';
 
   html += '<div class="card"><h3>👤 Google အကောင့်နဲ့ ဝင်ရန်</h3>' +
     '<div class="small muted mb">ကိုယ်ပိုင် Google Cloud Console မှ OAuth Client ID ထည့်ပါ။ ID မထည့်ထားရင် login မလိုအပ်ဘဲ local mode နဲ့ အလုပ်လုပ်ပါတယ်။</div>' +
@@ -1511,6 +1544,10 @@ function renderSettings() {
     s.geminiModel = $('setGeminiModel').value.trim() || 'gemini-3.8-flash';
     s.openaiKey = $('setOpenai').value.trim();
     s.claudeKey = $('setClaude').value.trim();
+    s.customBase = $('setCustomBase').value.trim();
+    s.customKey = $('setCustomKey').value.trim();
+    s.customModel = $('setCustomModel').value.trim();
+    s.pollinations = $('setPollinations').checked;
     saveDB(); toast('Keys များ သိမ်းပြီးပါပြီ ✅'); renderSettings();
   });
   $('btnSaveGid').addEventListener('click', () => {
