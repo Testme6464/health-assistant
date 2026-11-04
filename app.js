@@ -178,28 +178,38 @@ function geminiModelName() {
   const m = (DB.settings && DB.settings.geminiModel || '').trim();
   return m || 'gemini-3.8-flash';
 }
-// Fetch with automatic retry for transient Gemini overload/rate-limit (503/429).
-// Free-tier models often spike; retry a few times with growing delays before giving up.
-async function geminiFetch(url, opts, tries) {
+// Fetch with automatic retry for transient Gemini overload/rate-limit (503/429),
+// network failures and hung requests. Free-tier models often spike; retry a few
+// times with growing delays before giving up. onRetry(attempt, total) is called
+// before each retry so the UI can show progress instead of looking stuck.
+async function geminiFetch(url, opts, tries, onRetry) {
   tries = tries || 3;
+  const TIMEOUT_MS = 25000;
   let lastErr = new Error('AI ခေါ်ဆို၍မရပါ');
   for (let i = 0; i < tries; i++) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
     try {
-      const r = await fetch(url, opts);
+      const r = await fetch(url, Object.assign({}, opts, { signal: ctrl.signal }));
+      clearTimeout(timer);
       let j = {};
       try { j = await r.json(); } catch (e) { /* non-JSON body */ }
       if (r.ok) return j;
       const msg = (j.error && j.error.message) || ('HTTP ' + r.status);
       lastErr = new Error(msg);
       if ((r.status === 503 || r.status === 429) && i < tries - 1) {
+        if (onRetry) onRetry(i + 2, tries);
         await new Promise(res => setTimeout(res, (i + 1) * 4000));
         continue;
       }
       throw lastErr;
     } catch (e) {
+      clearTimeout(timer);
       lastErr = e;
-      // Network-level failure: retry too, unless this was the last attempt
-      if (i < tries - 1 && e instanceof TypeError) {
+      // TypeError = network failure, AbortError = our 25s timeout fired
+      const retryable = (e instanceof TypeError) || (e && e.name === 'AbortError');
+      if (i < tries - 1 && retryable) {
+        if (onRetry) onRetry(i + 2, tries);
         await new Promise(res => setTimeout(res, (i + 1) * 4000));
         continue;
       }
@@ -208,7 +218,7 @@ async function geminiFetch(url, opts, tries) {
   }
   throw lastErr;
 }
-async function aiChat(systemPrompt, userPrompt) {
+async function aiChat(systemPrompt, userPrompt, onRetry) {
   const s = DB.settings, prov = aiProvider();
   if (!prov) throw new Error('API key မရှိပါ');
   if (prov === 'gemini') {
@@ -216,7 +226,7 @@ async function aiChat(systemPrompt, userPrompt) {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ system_instruction: { parts: [{ text: systemPrompt }] },
         contents: [{ parts: [{ text: userPrompt }] }] })
-    });
+    }, 3, onRetry);
     return j.candidates[0].content.parts.map(p => p.text || '').join('');
   }
   if (prov === 'openai') {
@@ -243,7 +253,7 @@ async function aiChat(systemPrompt, userPrompt) {
   return j.content.map(b => b.text || '').join('');
 }
 // Gemini vision for food photo analysis. Returns {items:[{name,kcal}], totalKcal, note}
-async function geminiFoodVision(dataUrl) {
+async function geminiFoodVision(dataUrl, onRetry) {
   const s = DB.settings;
   if (!s.geminiKey) throw new Error('Gemini API key မထည့်ထားပါ');
   const m = dataUrl.match(/^data:(image\/\w+);base64,(.+)$/);
@@ -255,7 +265,7 @@ async function geminiFoodVision(dataUrl) {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ contents: [{ parts: [{ text: prompt },
       { inline_data: { mime_type: m[1], data: m[2] } }] }] })
-  });
+  }, 3, onRetry);
   const text = j.candidates[0].content.parts.map(p => p.text || '').join('');
   const jm = text.match(/\{[\s\S]*\}/);
   if (!jm) throw new Error('AI အဖြေကို ဖတ်မရပါ');
@@ -445,8 +455,8 @@ function renderHome() {
         ((calcBMI(p2) || 0).toFixed(1)) + ', goal ' + (GOAL_LABEL[p2.goal] || '') +
         ', conditions: ' + (p2.conditions.join(', ') || 'none') +
         '. Today: ' + kcalToday + '/' + kcalTarget + ' kcal, water ' + waterToday + 'ml, steps ' + stepsToday +
-        '. Give one personalized health tip for the rest of today.'
-      );
+        '. Give one personalized health tip for the rest of today.',
+        (n, total) => { aiBtn.textContent = 'ပြန်ကြိုးစားနေသည်… (' + n + '/' + total + ')'; });
       $('coachTipBox').textContent = tip;
     } catch (e) { toast('AI ခေါ်ဆို၍မရပါ: ' + e.message); }
     aiBtn.disabled = false; aiBtn.textContent = '✨ AI အကြံပြုချက် တောင်းမယ်';
@@ -987,7 +997,8 @@ function renderFood() {
     if (!foodPhotoDataUrl) { toast('အရင်ပုံ ရွေးပေးပါ'); return; }
     analyzeBtn.disabled = true; analyzeBtn.textContent = 'ဆန်းစစ်နေသည်…';
     try {
-      const res = await geminiFoodVision(foodPhotoDataUrl);
+      const res = await geminiFoodVision(foodPhotoDataUrl,
+        (n, total) => { analyzeBtn.textContent = 'ပြန်ကြိုးစားနေသည်… (' + n + '/' + total + ')'; });
       const box = $('foodAiResult');
       if (!res.items.length) { box.innerHTML = '<div class="warn-box">ပုံထဲမှာ အစားအစာ မတွေ့ပါ</div>'; }
       else {
