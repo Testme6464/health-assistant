@@ -65,7 +65,7 @@ function defaultDB() {
     plans: {},           // profileId -> {month,createdAt,ai,meals,sleep,workout,diet,tip,rawAi}
     reminders: { waterEnabled: true, waterInterval: 120, waterStart: '08:00', waterEnd: '21:00',
                  medEnabled: true, sleepEnabled: true, bedtime: '22:30' },
-    settings: { geminiKey: '', geminiModel: 'gemini-3.8-flash', openaiKey: '', claudeKey: '',
+    settings: { geminiKey: '', geminiKeys: [], geminiModel: 'gemini-3.8-flash', openaiKey: '', claudeKey: '',
                 customBase: '', customKey: '', customModel: '', pollinations: false,
                 googleClientId: '',
                 googleUser: null, calorieTargetMode: 'auto', calorieTarget: 2000, waterTargetMl: 2000 }
@@ -77,7 +77,13 @@ function loadDB() {
     const raw = localStorage.getItem(STORE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed && parsed.version === 1) { DB = Object.assign(defaultDB(), parsed); return; }
+      if (parsed && parsed.version === 1) {
+        DB = Object.assign(defaultDB(), parsed);
+        // migrate legacy single Gemini key to the multi-key list
+        if (DB.settings.geminiKey && (!DB.settings.geminiKeys || !DB.settings.geminiKeys.length))
+          DB.settings.geminiKeys = [DB.settings.geminiKey];
+        return;
+      }
     }
   } catch (e) { console.warn('loadDB failed', e); }
 }
@@ -168,19 +174,62 @@ function calorieTarget(p) {
 const GOAL_LABEL = { lose: 'ကိုယ်အလေးချိန်လျှော့ချရန်', maintain: 'ထိန်းသိမ်းရန်', gain: 'တိုးရန်' };
 
 // ---------------- AI (BYOK) ----------------
+// TEMP (2026-11-04): user asked for Gemini-only for now. Other providers are hidden
+// from Settings and ignored here — set SHOW_OTHER_PROVIDERS=true in renderSettings
+// and restore the commented lines below to re-enable them.
 function aiProvider() {
-  const s = DB.settings;
-  if (s.customKey && s.customBase) return 'custom';
-  if (s.geminiKey) return 'gemini';
-  if (s.openaiKey) return 'openai';
-  if (s.claudeKey) return 'claude';
-  if (s.pollinations) return 'pollinations';
+  if (geminiKeyList().length) return 'gemini';
   return null;
+  // const s = DB.settings;
+  // if (s.customKey && s.customBase) return 'custom';
+  // if (s.openaiKey) return 'openai';
+  // if (s.claudeKey) return 'claude';
+  // if (s.pollinations) return 'pollinations';
+  // return null;
 }
+// Free-tier Gemini models (verified Nov 2026). 2.5 models are restricted to
+// projects that used them before, so they are intentionally not listed.
+const GEMINI_FREE_MODELS = ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3-flash',
+  'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemma-4'];
 // User-chosen Gemini model; falls back to gemini-3.8-flash for old saved settings.
 function geminiModelName() {
   const m = (DB.settings && DB.settings.geminiModel || '').trim();
   return m || 'gemini-3.8-flash';
+}
+// All configured Gemini keys (multi-key support). Migrates the legacy single key.
+function geminiKeyList() {
+  const s = DB.settings || {};
+  let keys = Array.isArray(s.geminiKeys) ? s.geminiKeys.slice() : [];
+  if (!keys.length && s.geminiKey) keys = [s.geminiKey];
+  return keys.map(k => String(k).trim()).filter(Boolean);
+}
+// Gemini call with automatic key rotation: if a key hits rate/quota limits,
+// hangs, or fails transiently, the next key is tried. Only a "model not found"
+// (404) error stops immediately since it affects every key equally.
+async function geminiFetchWithKeys(body, onRetry) {
+  const keys = geminiKeyList();
+  if (!keys.length) throw new Error('Gemini API key မထည့်ထားပါ');
+  const startIdx = (DB.settings._geminiKeyIdx || 0) % keys.length;
+  let lastErr = new Error('Gemini key အားလုံး အလုပ်မလုပ်ပါ');
+  const innerTries = keys.length > 1 ? 1 : 3; // with several keys, fail over fast instead of retrying one key
+  for (let k = 0; k < keys.length; k++) {
+    const idx = (startIdx + k) % keys.length;
+    try {
+      const j = await fetchWithRetry(
+        'https://generativelanguage.googleapis.com/v1beta/models/' + geminiModelName() + ':generateContent?key=' + encodeURIComponent(keys[idx]),
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) },
+        innerTries, onRetry);
+      DB.settings._geminiKeyIdx = idx; saveDB();
+      return j;
+    } catch (e) {
+      lastErr = e;
+      const msg = (e && e.message) || '';
+      if (/404/.test(msg)) throw e; // wrong model name — same for every key
+      DB.settings._geminiKeyIdx = (idx + 1) % keys.length; // next call starts from the next key
+    }
+  }
+  saveDB();
+  throw lastErr;
 }
 // Fetch with automatic retry for transient Gemini overload/rate-limit (503/429),
 // network failures and hung requests. Free-tier models often spike; retry a few
@@ -729,11 +778,10 @@ let lastPollinationsCall = 0;
 async function aiChatRaw(systemPrompt, userPrompt, onRetry) {
   const s = DB.settings, prov = aiProvider();
   if (!prov) throw new Error('API key မရှိပါ');  if (prov === 'gemini') {
-    const j = await fetchWithRetry('https://generativelanguage.googleapis.com/v1beta/models/' + geminiModelName() + ':generateContent?key=' + encodeURIComponent(s.geminiKey), {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ system_instruction: { parts: [{ text: systemPrompt }] },
-        contents: [{ parts: [{ text: userPrompt }] }] })
-    }, 3, onRetry);
+    const j = await geminiFetchWithKeys({
+      system_instruction: { parts: [{ text: systemPrompt }] },
+      contents: [{ parts: [{ text: userPrompt }] }]
+    }, onRetry);
     return j.candidates[0].content.parts.map(p => p.text || '').join('');
   }
   if (prov === 'openai') {
@@ -799,18 +847,15 @@ async function aiChat(systemPrompt, userPrompt, onRetry) {
 }
 // Gemini vision for food photo analysis. Returns {items:[{name,kcal}], totalKcal, note}
 async function geminiFoodVision(dataUrl, onRetry) {
-  const s = DB.settings;
-  if (!s.geminiKey) throw new Error('Gemini API key မထည့်ထားပါ');
+  if (!geminiKeyList().length) throw new Error('Gemini API key မထည့်ထားပါ');
   const m = dataUrl.match(/^data:(image\/\w+);base64,(.+)$/);
   if (!m) throw new Error('ပုံဖိုင် မမှန်ပါ');
   const prompt = 'Analyze this food photo. Identify each visible food item and estimate calories ' +
     'for a typical serving. Reply ONLY with JSON: {"items":[{"name":"<Burmese name>","kcal":<number>}],"totalKcal":<number>}. ' +
     'Use Burmese (Myanmar script) for names. If no food is visible, return {"items":[],"totalKcal":0}.';
-  const j = await fetchWithRetry('https://generativelanguage.googleapis.com/v1beta/models/' + geminiModelName() + ':generateContent?key=' + encodeURIComponent(s.geminiKey), {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contents: [{ parts: [{ text: prompt },
-      { inline_data: { mime_type: m[1], data: m[2] } }] }] })
-  }, 3, onRetry);
+  const j = await geminiFetchWithKeys({
+    contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: m[1], data: m[2] } }] }]
+  }, onRetry);
   const text = toUnicodeMyanmar(j.candidates[0].content.parts.map(p => p.text || '').join(''));
   const jm = text.match(/\{[\s\S]*\}/);
   if (!jm) throw new Error('AI အဖြေကို ဖတ်မရပါ');
@@ -1521,7 +1566,7 @@ function renderFood() {
       '<label>အစားအစာ ပုံရိုက်ရန် / ရွေးရန်</label>' +
       '<input id="foodPhoto" type="file" accept="image/*" capture="environment">' +
       '<div id="foodPhotoPrev" class="mt"></div><div id="foodAiResult" class="mt"></div>' +
-      (DB.settings.geminiKey
+      (geminiKeyList().length
         ? '<div class="mt"><button class="btn block" id="btnAnalyzeFood">✨ AI နဲ့ ပုံကို ဆန်းစစ်မယ်</button></div>'
         : '<div class="info-box mt">📷 ပုံမှ AI ဆန်းစစ်ချက်ရဖို့ Settings မှာ <b>Gemini API key</b> ထည့်ထားရပါမယ်။ Key မရှိရင် ပုံကြည့်ပြီး အောက်က စာနဲ့ထည့်တဲ့နည်းနဲ့ မှတ်နိုင်ပါတယ်။</div>') +
     '</div></div>';
@@ -2064,12 +2109,19 @@ function renderReport() {
 // ============================================================
 function renderSettings() {
   const s = DB.settings;
-  let html = '<div class="card"><h3>🤖 ကိုယ်ပိုင် AI API Keys (BYOK)</h3>' +
+  const SHOW_OTHER_PROVIDERS = false; // TEMP 2026-11-04: Gemini-only per user request — set true to restore
+  const gKeys = geminiKeyList();
+  const curModel = geminiModelName();
+  const modelOpts = GEMINI_FREE_MODELS.map(m => '<option value="' + m + '"' + (curModel === m ? ' selected' : '') + '>' + m + (m === 'gemini-3.8-flash' ? ' (အကြံပြု)' : '') + '</option>').join('') +
+    (GEMINI_FREE_MODELS.includes(curModel) ? '' : '<option value="' + esc(curModel) + '" selected>' + esc(curModel) + ' (ဟောင်း)</option>');
+  let html = '<div class="card"><h3>🤖 Gemini AI (BYOK)</h3>' +
     '<div class="small muted mb">Key တွေကို ဒီဖုန်း/စက်ထဲမှာပဲ သိမ်းထားပါတယ် — server ကို မပို့ပါ။ AI လုပ်ဆောင်ချက်များ: ဆေးဓာတ်ပြုမှု စစ်ဆေးခြင်း၊ အစီအစဉ် ထုတ်လုပ်ခြင်း၊ ပုံမှ အစားအစာ ဆန်းစစ်ခြင်း၊ AI အကြံပြုချက်။</div>' +
-    '<label>Gemini API Key</label><input id="setGemini" type="password" value="' + esc(s.geminiKey) + '" placeholder="AIza…">' +
-    '<label>Gemini Model</label><input id="setGeminiModel" list="geminiModelList" value="' + esc(geminiModelName()) + '" placeholder="gemini-3.8-flash">' +
-    '<datalist id="geminiModelList"><option value="gemini-3.8-flash"></option></datalist>' +
-    '<div class="small muted mb">ကြိုက်တဲ့ model နာမည်ကို ရွေးချယ်နိုင် / ကိုယ်တိုင် ရိုက်ထည့်နိုင်ပါတယ်</div>' +
+    '<label>Gemini API Keys <span class="small muted">(တစ်ခုထက်ပိုထည့်လို့ရပါတယ် — တစ်ကြောင်းကို တစ်ခု)</span></label>' +
+    '<textarea id="setGeminiKeys" rows="3" placeholder="AIza…">' + esc(gKeys.join('\n')) + '</textarea>' +
+    '<div class="small muted mb">Key တစ်ခုမှာ limit ထိ / ပျက်ရင် နောက် key ကို အလိုအလျောက် ပြောင်းသုံးပေးမယ် 🔄</div>' +
+    '<label>Gemini Model <span class="small muted">(အခမဲ့ free tier ရတာတွေချည်း)</span></label>' +
+    '<select id="setGeminiModel">' + modelOpts + '</select>' +
+    (SHOW_OTHER_PROVIDERS ?
     '<label>OpenAI API Key</label><input id="setOpenai" type="password" value="' + esc(s.openaiKey) + '" placeholder="sk-…">' +
     '<label>Claude API Key</label><input id="setClaude" type="password" value="' + esc(s.claudeKey) + '" placeholder="sk-ant-…">' +
     '<div class="mt mb"><b>🆓 အခမဲ့ AI (OpenAI-compatible)</b>' +
@@ -2078,9 +2130,10 @@ function renderSettings() {
     '<label>API Key</label><input id="setCustomKey" type="password" value="' + esc(s.customKey) + '" placeholder="gsk_…">' +
     '<label>Model</label><input id="setCustomModel" value="' + esc(s.customModel) + '" placeholder="openai/gpt-oss-20b">' +
     '<label class="row mt" style="gap:8px;align-items:flex-start"><input type="checkbox" id="setPollinations" style="width:auto;margin-top:4px"' + (s.pollinations ? ' checked' : '') + '>' +
-    '<span>🆓 <b>Pollinations</b> — key မလို, အခမဲ့သုံးမယ် (တခြား key မရှိရင် အရန်အဖြစ် သုံးမယ်)</span></label>' +
+    '<span>🆓 <b>Pollinations</b> — key မလို, အခမဲ့သုံးမယ် (တခြား key မရှိရင် အရန်အဖြစ် သုံးမယ်)</span></label>'
+    : '') +
     '<div class="mt"><button class="btn block" id="btnSaveKeys">💾 Keys များ သိမ်းမယ်</button></div>' +
-    '<div class="small muted mt">လက်ရှိ AI: <b>' + ({ gemini: 'Gemini (' + esc(geminiModelName()) + ')', openai: 'OpenAI', claude: 'Claude', custom: 'Custom (' + esc(s.customModel || 'default model') + ')', pollinations: 'Pollinations (အခမဲ့)' }[aiProvider()] || 'မရှိပါ (offline mode)') + '</b></div></div>';
+    '<div class="small muted mt">လက်ရှိ AI: <b>' + (aiProvider() === 'gemini' ? 'Gemini (' + esc(curModel) + ', key ' + gKeys.length + ' ခု)' : 'မရှိပါ (offline mode)') + '</b></div></div>';
 
   html += '<div class="card"><h3>👤 Google အကောင့်နဲ့ ဝင်ရန်</h3>' +
     '<div class="small muted mb">ကိုယ်ပိုင် Google Cloud Console မှ OAuth Client ID ထည့်ပါ။ ID မထည့်ထားရင် login မလိုအပ်ဘဲ local mode နဲ့ အလုပ်လုပ်ပါတယ်။</div>' +
@@ -2110,14 +2163,17 @@ function renderSettings() {
   $('view-settings').innerHTML = html;
 
   $('btnSaveKeys').addEventListener('click', () => {
-    s.geminiKey = $('setGemini').value.trim();
-    s.geminiModel = $('setGeminiModel').value.trim() || 'gemini-3.8-flash';
-    s.openaiKey = $('setOpenai').value.trim();
-    s.claudeKey = $('setClaude').value.trim();
-    s.customBase = $('setCustomBase').value.trim();
-    s.customKey = $('setCustomKey').value.trim();
-    s.customModel = $('setCustomModel').value.trim();
-    s.pollinations = $('setPollinations').checked;
+    s.geminiKeys = $('setGeminiKeys').value.split('\n').map(k => k.trim()).filter(Boolean);
+    s.geminiKey = s.geminiKeys[0] || '';
+    s.geminiModel = $('setGeminiModel').value;
+    if (SHOW_OTHER_PROVIDERS) {
+      s.openaiKey = $('setOpenai').value.trim();
+      s.claudeKey = $('setClaude').value.trim();
+      s.customBase = $('setCustomBase').value.trim();
+      s.customKey = $('setCustomKey').value.trim();
+      s.customModel = $('setCustomModel').value.trim();
+      s.pollinations = $('setPollinations').checked;
+    }
     saveDB(); toast('Keys များ သိမ်းပြီးပါပြီ ✅'); renderSettings();
   });
   $('btnSaveGid').addEventListener('click', () => {
