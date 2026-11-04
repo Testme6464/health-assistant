@@ -896,15 +896,26 @@ saveDB();
 async function generateAiPlan() {
 const p = activeProfile();
 const btn = $('btnGenPlanAI');
+const onRetry = (n, total, note) => { btn.textContent = note === 'wait' ? 'ခဏစောင့်နေသည်…' : ('AI ထုတ်လုပ်နေသည်… (' + n + '/' + total + ')'); };
 btn.disabled = true; btn.textContent = 'AI ထုတ်လုပ်နေသည်…';
+// Exact headers the prompt demands — used to validate the AI actually returned a plan.
+const PLAN_HEADERS = ['စားသောက်ချိန်', 'အိပ်စက်ချိန်', 'လေ့ကျင့်ခန်း', 'စားသင့်', 'ရှောင်'];
+const planHasHeaders = (ans) => PLAN_HEADERS.filter(h => ans.includes(h)).length >= 3;
+const PLAN_PROMPT = 'You are a health planner. Reply ONLY in Burmese (Myanmar script). ' +
+'Output a one-month personal health plan using EXACTLY these 5 section headers, in this order:\n' +
+'## 🍽️ စားသောက်ချိန်\n## 😴 အိပ်စက်ချိန်\n## 🏃 လေ့ကျင့်ခန်း (၄ ပတ်)\n## 🥗 စားသင့်သောအစားအစာများ\n## 🚫 ရှောင်ရန်များ\n' +
+'Be specific with exact times. Do not ask any questions. No preamble, no explanations outside the sections. No medical diagnosis.';
 try {
-const ans = await aiChat(
-'You are a health planner. Reply in Burmese (Myanmar script) with a one-month health plan using these exact section headers:. Be specific with times. No diagnosis.',
-'Profile: name ' + p.name + ', age ' + (p.age || '?') + ', gender ' + (p.gender || '?') +
+const userPrompt = 'Profile: name ' + p.name + ', age ' + (p.age || '?') + ', gender ' + (p.gender || '?') +
 ', height ' + (p.height || '?') + 'cm, weight ' + (p.weight || '?') + 'kg, BMI ' + ((calcBMI(p) || 0).toFixed(1)) +
 ', goal: ' + (GOAL_LABEL[p.goal] || '') + ', conditions: ' + (p.conditions.join(', ') || 'none') +
-', allergies: ' + (p.allergies.join(', ') || 'none') + '. Daily calorie target ' + calorieTarget(p) + ' kcal.'
-);
+', allergies: ' + (p.allergies.join(', ') || 'none') + '. Daily calorie target ' + calorieTarget(p) + ' kcal.';
+let ans = await aiChat(PLAN_PROMPT, userPrompt, onRetry);
+if (!planHasHeaders(ans)) {
+  // Small free models sometimes ramble instead of following the format — one strict retry.
+  ans = await aiChat(PLAN_PROMPT + '\nSTRICT: output ONLY the 5 sections above. Do not ask questions.', userPrompt, onRetry);
+  if (!planHasHeaders(ans)) throw new Error('AI အဖြေ ပုံစံမမှန်ပါ');
+}
 DB.plans[p.id] = { month: currentMonthKey(), createdAt: new Date().toISOString(), ai: true, rawAi: ans};
 saveDB(); renderPlan(); toast('AI အစီအစဉ် ရပြီးပါပြီ ✅');
 } catch (e) {
@@ -914,7 +925,16 @@ btn.disabled = false; btn.textContent = '✨ AI နဲ့ ထုတ်မယ်'
 }
 function planHtml(plan) {
 if (plan.ai && plan.rawAi) {
-return '<div style="white-space:pre-wrap">' + esc(plan.rawAi) + '</div>';
+// Render "## Header" markdown lines as real section headers.
+const parts = esc(plan.rawAi).split(/^## /m);
+let out = '<div style="white-space:pre-wrap">' + parts[0] + '</div>';
+for (let i = 1; i < parts.length; i++) {
+const nl = parts[i].indexOf('\n');
+const head = nl >= 0 ? parts[i].slice(0, nl) : parts[i];
+const body = nl >= 0 ? parts[i].slice(nl + 1) : '';
+out += '<h4>' + head + '</h4><div style="white-space:pre-wrap">' + body + '</div>';
+}
+return out;
 }
 let h = '<h4>🍽️ စားသောက်ချိန် အချိန်ဇယား (ရည်မှန်း ' + plan.calorieTarget + ' kcal/နေ့)</h4>' +
 '<table><tr><th>အချိန်</th><th>အစာ</th><th>ပါဝင်မည့်အရာများ</th></tr>' +
