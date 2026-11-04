@@ -233,10 +233,11 @@ async function fetchWithRetry(url, opts, tries, onRetry) {
   }
   throw lastErr;
 }
+// Client-side throttle for Pollinations free lane (~1 reply per 45s per IP).
+let lastPollinationsCall = 0;
 async function aiChat(systemPrompt, userPrompt, onRetry) {
   const s = DB.settings, prov = aiProvider();
-  if (!prov) throw new Error('API key မရှိပါ');
-  if (prov === 'gemini') {
+  if (!prov) throw new Error('API key မရှိပါ');  if (prov === 'gemini') {
     const j = await fetchWithRetry('https://generativelanguage.googleapis.com/v1beta/models/' + geminiModelName() + ':generateContent?key=' + encodeURIComponent(s.geminiKey), {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ system_instruction: { parts: [{ text: systemPrompt }] },
@@ -268,6 +269,12 @@ async function aiChat(systemPrompt, userPrompt, onRetry) {
   }
   // pollinations: free, no signup, no key — OpenAI-compatible endpoint
   if (prov === 'pollinations') {
+    const gapMs = 45000 - (Date.now() - lastPollinationsCall);
+    if (gapMs > 0) {
+      if (onRetry) onRetry(0, 0, 'wait');
+      await new Promise(res => setTimeout(res, gapMs));
+    }
+    lastPollinationsCall = Date.now();
     const j = await fetchWithRetry('https://text.pollinations.ai/openai', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: 'openai',
@@ -493,7 +500,7 @@ function renderHome() {
         ', conditions: ' + (p2.conditions.join(', ') || 'none') +
         '. Today: ' + kcalToday + '/' + kcalTarget + ' kcal, water ' + waterToday + 'ml, steps ' + stepsToday +
         '. Give one personalized health tip for the rest of today.',
-        (n, total) => { aiBtn.textContent = 'ပြန်ကြိုးစားနေသည်… (' + n + '/' + total + ')'; });
+        (n, total, note) => { aiBtn.textContent = note === 'wait' ? 'ခဏစောင့်နေသည်…' : ('ပြန်ကြိုးစားနေသည်… (' + n + '/' + total + ')'); });
       $('coachTipBox').textContent = tip;
     } catch (e) { toast('AI ခေါ်ဆို၍မရပါ: ' + e.message); }
     aiBtn.disabled = false; aiBtn.textContent = '✨ AI အကြံပြုချက် တောင်းမယ်';
@@ -1035,7 +1042,7 @@ function renderFood() {
     analyzeBtn.disabled = true; analyzeBtn.textContent = 'ဆန်းစစ်နေသည်…';
     try {
       const res = await geminiFoodVision(foodPhotoDataUrl,
-        (n, total) => { analyzeBtn.textContent = 'ပြန်ကြိုးစားနေသည်… (' + n + '/' + total + ')'; });
+        (n, total, note) => { analyzeBtn.textContent = note === 'wait' ? 'ခဏစောင့်နေသည်…' : ('ပြန်ကြိုးစားနေသည်… (' + n + '/' + total + ')'); });
       const box = $('foodAiResult');
       if (!res.items.length) { box.innerHTML = '<div class="warn-box">ပုံထဲမှာ အစားအစာ မတွေ့ပါ</div>'; }
       else {
