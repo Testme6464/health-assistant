@@ -42,7 +42,7 @@ function fmtTimeMm(hm) { // 24h -> Burmese 12h label
 
 // ---------------- store (localStorage, versioned) ----------------
 const STORE_KEY = 'healthAppV1';
-const APP_VERSION = '2026-11-05t'; // bump on every deploy; shown in Settings
+const APP_VERSION = '2026-11-05u'; // bump on every deploy; shown in Settings
 function defaultDB() {
   const p1 = uid();
   return {
@@ -1035,22 +1035,22 @@ const GOAL_MEALS = {
 const GOAL_WORKOUT = {
   gain: {
     days: [
-      { day: 'တနင်္လာ', act: 'ကြွက်သားလေ့ကျင့်ခန်း (squat, push-up)', min: 20 },
+      { day: 'တနင်္လာ', act: 'ကြွက်သားလေ့ကျင့်ခန်း (squat, push-up)', min: 20, alt: 'ထိုင်ခုံကနေထခြင်း / နံရံတွန်းခြင်း' },
       { day: 'အင်္ဂါ', act: 'လမ်းလျှောက်', min: 30 },
-      { day: 'ဗုဒ္ဓဟူး', act: 'ကြွက်သားလေ့ကျင့်ခန်း (လက်မောင်း၊ ရင်)', min: 20 },
+      { day: 'ဗုဒ္ဓဟူး', act: 'ကြွက်သားလေ့ကျင့်ခန်း (လက်မောင်း၊ ရင်)', min: 20, alt: 'နံရံတွန်းခြင်း / ရေဘူးကိုင်ပြီး လက်မောင်းလှုပ်ခြင်း' },
       { day: 'ကြာသပတေး', act: 'အနားယူ / အကြောဆန့်', min: 10 },
-      { day: 'သောကြာ', act: 'ကြွက်သားလေ့ကျင့်ခန်း (ခြေထောက်၊ ဗိုက်)', min: 20 },
-      { day: 'စနေ', act: 'လမ်းလျှောက် / စက်ဘီးစီး', min: 30 },
+      { day: 'သောကြာ', act: 'ကြွက်သားလေ့ကျင့်ခန်း (ခြေထောက်၊ ဗိုက်)', min: 20, alt: 'ထိုင်ခုံကနေထခြင်း / ခြေထောက်ဖြေးဖြေးမြှောက်ခြင်း' },
+      { day: 'စနေ', act: 'လမ်းလျှောက် / စက်ဘီးစီး', min: 30, alt: 'လမ်းလျှောက်' },
       { day: 'တနင်္ဂနွေ', act: 'အနားယူ', min: 0 },
     ],
   },
   lose: {
     days: [
-      { day: 'တနင်္လာ', act: 'လမ်းမြန်မြန်လျှောက်', min: 40 },
-      { day: 'အင်္ဂါ', act: 'ပြေး / စက်ဘီးစီး', min: 30 },
-      { day: 'ဗုဒ္ဓဟူး', act: 'ကိုယ်အလေးချိန်သုံး လေ့ကျင့်ခန်း', min: 20 },
+      { day: 'တနင်္လာ', act: 'လမ်းမြန်မြန်လျှောက်', min: 40, alt: 'လမ်းလျှောက် (ဖြေးဖြေး)' },
+      { day: 'အင်္ဂါ', act: 'ပြေး / စက်ဘီးစီး', min: 30, alt: 'လမ်းမြန်မြန်လျှောက်' },
+      { day: 'ဗုဒ္ဓဟူး', act: 'ကိုယ်အလေးချိန်သုံး လေ့ကျင့်ခန်း', min: 20, alt: 'ထိုင်ခုံကနေထခြင်း / နံရံတွန်းခြင်း' },
       { day: 'ကြာသပတေး', act: 'လမ်းလျှောက်', min: 40 },
-      { day: 'သောကြာ', act: 'ပြေး / စက်ဘီးစီး', min: 30 },
+      { day: 'သောကြာ', act: 'ပြေး / စက်ဘီးစီး', min: 30, alt: 'လမ်းမြန်မြန်လျှောက်' },
       { day: 'စနေ', act: 'လမ်းလျှောက်', min: 45 },
       { day: 'တနင်္ဂနွေ', act: 'အနားယူ / stretching', min: 10 },
     ],
@@ -1058,11 +1058,11 @@ const GOAL_WORKOUT = {
   maintain: {
     days: [
       { day: 'တနင်္လာ', act: 'လမ်းလျှောက်', min: 30 },
-      { day: 'အင်္ဂါ', act: 'ကြွက်သားလေ့ကျင့်ခန်း', min: 15 },
+      { day: 'အင်္ဂါ', act: 'ကြွက်သားလေ့ကျင့်ခန်း', min: 15, alt: 'ထိုင်ခုံကနေထခြင်း / နံရံတွန်းခြင်း' },
       { day: 'ဗုဒ္ဓဟူး', act: 'လမ်းလျှောက်', min: 30 },
       { day: 'ကြာသပတေး', act: 'အနားယူ / stretching', min: 10 },
-      { day: 'သောကြာ', act: 'လမ်း / ပြေး', min: 30 },
-      { day: 'စနေ', act: 'ကြွက်သားလေ့ကျင့်ခန်း', min: 15 },
+      { day: 'သောကြာ', act: 'လမ်း / ပြေး', min: 30, alt: 'လမ်းလျှောက်' },
+      { day: 'စနေ', act: 'ကြွက်သားလေ့ကျင့်ခန်း', min: 15, alt: 'ထိုင်ခုံကနေထခြင်း / နံရံတွန်းခြင်း' },
       { day: 'တနင်္ဂနွေ', act: 'အနားယူ', min: 0 },
     ],
   },
@@ -1076,6 +1076,7 @@ function buildWorkoutWeeks(goal) {
     days: base.map(d => ({
       day: d.day,
       text: d.min > 0 ? d.act + ' ' + Math.round(d.min * WEEK_MIN_FACTOR[wi]) + ' မိနစ်' : d.act,
+      alt: d.alt || null,
     })),
   }));
 }
@@ -1136,6 +1137,7 @@ const PLAN_PROMPT =
 'Be specific: exact times, dish names with portions and kcal, one reason line per meal explaining why to eat it, ' +
 'for each meal list SEVERAL specific dish options (e.g. ကြက်သားဟင်း, ဝက်သားဟင်း, ငါးဟင်း, ကြက်ကင်, ပဲဟင်း, တို့ဟူးနွေး, ကန်စွန်းရွက်ကြော်, မုန့်ဟင်းခါး, ငါးဖယ်သုပ်) instead of generic "meat curry", ' +
 'a 7-day exercise schedule for each of the 4 weeks with durations, and a day-by-day guide for the current date. ' +
+'For strenuous exercises (squat, push-up, running), also suggest a gentler alternative for older people. ' +
 'Do not ask questions. No preamble. No medical diagnosis.';
 try {
 const bmi = calcBMI(p);
@@ -1185,9 +1187,13 @@ function todayGuide(plan) {
   const day = wk.days && wk.days[di];
   let h = '<h4>📅 ဒီနေ့ (' + fmtDateMm(todayStr()) + ') လမ်းညွှန်</h4>' +
     '<div class="info-box">' + esc(wk.week) + (wk.title ? ' — ' + esc(wk.title) : '') + (day ? ' · ' + esc(day.day) : '') + '<br>';
-  if (day) h += '🏃 လေ့ကျင့်ခန်း: <b>' + esc(day.text) + '</b><br>';
+  if (day) {
+    h += '🏃 လေ့ကျင့်ခန်း: <b>' + esc(day.text) + '</b>' +
+      (day.alt ? '<br><span class="small muted">👴 အသက်ကြီးသူများ အစားထိုး: ' + esc(day.alt) + '</span>' : '') + '<br>';
+  }
   h += '🎯 ကယ်လိုရီ: <b>' + plan.calorieTarget + ' kcal</b><br>🍽️ ဒီနေ့ စားရန်:<br>' +
-    plan.meals.map(m => '• ' + fmtTimeMm(m.time) + ' — ' + esc(m.name) + ': ' + m.items.map(esc).join(', ')).join('<br>') + '</div>';
+    plan.meals.map(m => '<div class="mt"><b>' + fmtTimeMm(m.time) + ' — ' + esc(m.name) + '</b> <span class="small muted">(' + m.items.length + ' မျိုး)</span>' +
+      m.items.map(foodBoxHtml).join('') + '</div>').join('') + '</div>';
   return h;
 }
 
@@ -1229,7 +1235,8 @@ h += '<h4>🏃 ၄ ပတ် လေ့ကျင့်ခန်း အစီအ�
 plan.workout.map(w => '<div class="card" style="margin-bottom:8px"><b>' + esc(w.week) + (w.title ? ' — ' + esc(w.title) : '') + '</b>' +
 (w.days
   ? '<table class="mt"><tr><th>နေ့</th><th>လေ့ကျင့်ခန်း</th></tr>' +
-    w.days.map(d => '<tr><td>' + esc(d.day) + '</td><td>' + esc(d.text) + '</td></tr>').join('') + '</table>'
+    w.days.map(d => '<tr><td>' + esc(d.day) + '</td><td>' + esc(d.text) +
+      (d.alt ? '<div class="small muted">👴 အသက်ကြီးသူများ အစားထိုး: ' + esc(d.alt) + '</div>' : '') + '</td></tr>').join('') + '</table>'
   : '<ul style="margin:6px 0 0;padding-left:20px">' + (w.items || []).map(i => '<li>' + esc(i) + '</li>').join('') + '</ul>') +
 '</div>').join('');
 h += '<h4>🥗 စားသင့်သော အစားအစာများ</h4><div>' + plan.diet.eat.map(i => '<span class="tag">✅ ' + esc(i) + '</span>').join('') + '</div>';
