@@ -42,7 +42,7 @@ function fmtTimeMm(hm) { // 24h -> Burmese 12h label
 
 // ---------------- store (localStorage, versioned) ----------------
 const STORE_KEY = 'healthAppV1';
-const APP_VERSION = '2026-11-05e'; // bump on every deploy; shown in Settings
+const APP_VERSION = '2026-11-05f'; // bump on every deploy; shown in Settings
 function defaultDB() {
   const p1 = uid();
   return {
@@ -515,16 +515,15 @@ function renderHome() {
     '<h3>ဒီနေ့ အကျဉ်းချုပ်</h3><span class="muted">' + fmtDateMm(t) + '</span></div>' +
     '<div class="muted">' + esc(p.name) + ' · ရည်မှန်းချက်: ' + GOAL_LABEL[p.goal || 'maintain'] + '</div></div>';
 
-  // calories — liquid fill card (fills little by little as kcal increases)
+  // calories + water — side by side (ဘေးချင်းကပ်), liquid fill cards
+  html += '<div class="fill-grid">';
   html += '<div class="card fill-card">' +
     '<div class="fill fill-kcal" style="height:' + kcalPct + '%"></div>' +
     '<div class="fill-content"><div class="row space-between"><h3>🍚 ကယ်လိုရီ</h3>' +
     '<span class="pct-badge">' + kcalPct + '%</span></div>' +
     '<div class="big-num">' + kcalToday + ' <small>kcal</small></div>' +
-    '<div class="muted">ရည်မှန်း ' + kcalTarget + ' kcal</div></div></div>' +
-    coachingMsg(p, kcalToday, kcalTarget);
+    '<div class="muted">ရည်မှန်း ' + kcalTarget + ' kcal</div></div></div>';
 
-  // water — liquid fill card (fills little by little as ml increases)
   html += '<div class="card fill-card">' +
     '<div class="fill fill-water" style="height:' + waterPct + '%"></div>' +
     '<div class="fill-content"><div class="row space-between"><h3>💧 ရေ</h3>' +
@@ -533,6 +532,8 @@ function renderHome() {
     '<div class="muted">ရည်မှန်း ' + waterTarget + ' ml</div>' +
     '<div class="water-btns"><button class="btn" data-water="250">+ 250 ml</button>' +
     '<button class="btn" data-water="500">+ 500 ml</button></div></div></div>';
+  html += '</div>';
+  html += coachingMsg(p, kcalToday, kcalTarget);
 
   // meds
   html += '<div class="card"><h3>💊 ဒီနေ့ ဆေး</h3>';
