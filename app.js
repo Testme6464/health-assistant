@@ -42,7 +42,7 @@ function fmtTimeMm(hm) { // 24h -> Burmese 12h label
 
 // ---------------- store (localStorage, versioned) ----------------
 const STORE_KEY = 'healthAppV1';
-const APP_VERSION = '2026-11-05x'; // bump on every deploy; shown in Settings
+const APP_VERSION = '2026-11-05y'; // bump on every deploy; shown in Settings
 function defaultDB() {
   const p1 = uid();
   return {
@@ -69,8 +69,7 @@ function defaultDB() {
                  medEnabled: true, sleepEnabled: true, bedtime: '22:30' },
     settings: { geminiKey: '', geminiKeys: [], geminiModel: 'gemini-3.8-flash', openaiKey: '', claudeKey: '',
                 customBase: '', customKey: '', customModel: '', pollinations: false,
-                googleClientId: '',
-                googleUser: null, calorieTargetMode: 'auto', calorieTarget: 2000, waterTargetMl: 2000 }
+                calorieTargetMode: 'auto', calorieTarget: 2000, waterTargetMl: 2000 }
   };
 }
 let DB = defaultDB();
@@ -2085,15 +2084,6 @@ function renderSettings() {
     '<div class="mt"><button class="btn block" id="btnSaveKeys">💾 Keys များ သိမ်းမယ်</button></div>' +
     '<div class="small muted mt">လက်ရှိ AI: <b>' + (aiProvider() === 'gemini' ? 'Gemini (' + esc(curModel) + ', key ' + gKeys.length + ' ခု)' : 'မရှိပါ (offline mode)') + '</b></div></div>';
 
-  html += '<div class="card"><h3>👤 Google အကောင့်နဲ့ ဝင်ရန်</h3>' +
-    '<div class="small muted mb">ကိုယ်ပိုင် Google Cloud Console မှ OAuth Client ID ထည့်ပါ။ ID မထည့်ထားရင် login မလိုအပ်ဘဲ local mode နဲ့ အလုပ်လုပ်ပါတယ်။</div>' +
-    '<label>Google OAuth Client ID</label><input id="setGid" value="' + esc(s.googleClientId) + '" placeholder="xxxxx.apps.googleusercontent.com">' +
-    '<div class="row wrap mt"><button class="btn secondary" id="btnSaveGid">သိမ်းမယ်</button>' +
-    (s.googleClientId ? '<button class="btn" id="btnGoogleSign">🔵 Google နဲ့ ဝင်မယ်</button>' : '') + '</div>' +
-    '<div id="googleBtnBox" class="mt"></div>' +
-    (s.googleUser ? '<div class="ok-box mt">✅ ဝင်ထားပြီးသား: <b>' + esc(s.googleUser.name || '') + '</b> (' + esc(s.googleUser.email || '') + ') ' +
-      '<button class="btn small-btn danger" id="btnGoogleOut">ထွက်မယ်</button></div>' : '') + '</div>';
-
   html += '<div class="card"><h3>💾 Data Backup</h3>' +
     '<div class="row wrap"><button class="btn secondary" id="btnExport">⬇️ Export (JSON)</button>' +
     '<label class="btn secondary" style="margin:0;cursor:pointer">⬆️ Import (JSON)<input id="importFile" type="file" accept=".json,application/json" style="display:none"></label></div>' +
@@ -2104,7 +2094,7 @@ function renderSettings() {
     '<span class="tag">APK version မှာ ရမယ်</span></div></div>';
 
   html += '<div class="card"><h3>🔒 Privacy</h3>' +
-    '<div class="info-box">ဒီ app ရဲ့ data အားလုံး ဒီ device ရဲ့ localStorage ထဲမှာပဲ ရှိပါတယ် — server မရှိ၊ အကောင့် မလိုအပ်ပါ။ Google login သုံးရင်တောင် ကျန်းမာရေးမှတ်တမ်းတွေကို Google ကို မပို့ပါ။</div>' +
+    '<div class="info-box">ဒီ app ရဲ့ data အားလုံး ဒီ device ရဲ့ localStorage ထဲမှာပဲ ရှိပါတယ် — server မရှိ၊ အကောင့် မလိုအပ်ပါ။</div>' +
     '<div class="small muted">ဘာသာစကား: မြန်မာ (အခုလောလောဆယ်)</div>' +
     '<div class="small muted">app version: ' + APP_VERSION + '</div></div>';
 
@@ -2126,16 +2116,6 @@ function renderSettings() {
       s.pollinations = $('setPollinations').checked;
     }
     saveDB(); toast('Keys များ သိမ်းပြီးပါပြီ ✅'); renderSettings();
-  });
-  $('btnSaveGid').addEventListener('click', () => {
-    s.googleClientId = $('setGid').value.trim();
-    saveDB(); toast('သိမ်းပြီးပါပြီ ✅'); renderSettings();
-  });
-  const gBtn = $('btnGoogleSign');
-  if (gBtn) gBtn.addEventListener('click', googleSignIn);
-  const gOut = $('btnGoogleOut');
-  if (gOut) gOut.addEventListener('click', () => {
-    s.googleUser = null; saveDB(); renderSettings(); toast('ထွက်ပြီးပါပြီ');
   });
   $('btnExport').addEventListener('click', () => {
     const blob = new Blob([JSON.stringify(DB, null, 2)], { type: 'application/json' });
@@ -2169,37 +2149,6 @@ function renderSettings() {
     toast('ဖျက်ပြီးပါပြီ');
   });
 }
-// Google Identity Services is loaded ONLY when the user entered their own Client ID.
-let gisLoading = false;
-function googleSignIn() {
-  const cid = DB.settings.googleClientId;
-  if (!cid) { toast('အရင် Client ID ထည့်ပါ'); return; }
-  const done = () => {
-    try {
-      google.accounts.id.initialize({
-        client_id: cid,
-        callback: (resp) => {
-          try {
-            const payload = JSON.parse(atob(resp.credential.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
-            DB.settings.googleUser = { name: payload.name || '', email: payload.email || '' };
-            saveDB(); renderSettings(); toast('ဝင်ရောက်ပြီးပါပြီ ✅');
-          } catch (e) { toast('Login အဖြေဖတ်မရပါ'); }
-        }
-      });
-      google.accounts.id.prompt();
-    } catch (e) { toast('Google Sign-In စတင်၍မရပါ: ' + e.message); }
-  };
-  if (window.google && google.accounts && google.accounts.id) { done(); return; }
-  if (gisLoading) { toast('ခဏစောင့်ပါ…'); return; }
-  gisLoading = true;
-  const sc = document.createElement('script');
-  sc.src = 'https://accounts.google.com/gsi/client';
-  sc.async = true; sc.defer = true;
-  sc.onload = () => { gisLoading = false; done(); };
-  sc.onerror = () => { gisLoading = false; toast('Google script ခေါ်၍မရပါ (internet လိုပါတယ်)'); };
-  document.head.appendChild(sc);
-}
-
 // ---------------- render registry & init ----------------
 const RENDER = {
   home: renderHome, profile: renderProfile, meds: renderMeds, plan: renderPlan,
