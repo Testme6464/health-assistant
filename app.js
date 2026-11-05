@@ -42,7 +42,7 @@ function fmtTimeMm(hm) { // 24h -> Burmese 12h label
 
 // ---------------- store (localStorage, versioned) ----------------
 const STORE_KEY = 'healthAppV1';
-const APP_VERSION = '2026-11-05u'; // bump on every deploy; shown in Settings
+const APP_VERSION = '2026-11-05v'; // bump on every deploy; shown in Settings
 function defaultDB() {
   const p1 = uid();
   return {
@@ -1137,7 +1137,6 @@ const PLAN_PROMPT =
 'Be specific: exact times, dish names with portions and kcal, one reason line per meal explaining why to eat it, ' +
 'for each meal list SEVERAL specific dish options (e.g. ကြက်သားဟင်း, ဝက်သားဟင်း, ငါးဟင်း, ကြက်ကင်, ပဲဟင်း, တို့ဟူးနွေး, ကန်စွန်းရွက်ကြော်, မုန့်ဟင်းခါး, ငါးဖယ်သုပ်) instead of generic "meat curry", ' +
 'a 7-day exercise schedule for each of the 4 weeks with durations, and a day-by-day guide for the current date. ' +
-'For strenuous exercises (squat, push-up, running), also suggest a gentler alternative for older people. ' +
 'Do not ask questions. No preamble. No medical diagnosis.';
 try {
 const bmi = calcBMI(p);
@@ -1155,7 +1154,9 @@ const userPrompt =
 'Today: ' + todayStr() + ' (' + ['တနင်္ဂနွေ', 'တနင်္လာ', 'အင်္ဂါ', 'ဗုဒ္ဓဟူး', 'ကြာသပတေး', 'သောကြာ', 'စနေ'][new Date().getDay()] + ') — the day-by-day guide must start from today\n' +
 'Usual bedtime: ' + (DB.reminders.bedtime || '?');
 const isQwenPlan = /qwen/i.test(DB.settings.customModel || '');
-const planPrompt = PLAN_PROMPT + (isQwenPlan ? ' Keep the entire plan concise: under ~450 words total.' : '');
+const showAlt = (parseFloat(p.age) || 0) >= 40; // exercise alternatives only from age 40
+const planPrompt = PLAN_PROMPT + (isQwenPlan ? ' Keep the entire plan concise: under ~450 words total.' : '') +
+  (showAlt ? ' For strenuous exercises (squat, push-up, running), also suggest a gentler alternative for older people.' : '');
 let ans = await aiChat(planPrompt, userPrompt, onRetry);
 if (!planOutputOk(ans)) {
   // One strict retry; then keep whichever version is better — never fail outright
@@ -1178,7 +1179,7 @@ renderPlan();
 }
 }
 // Day-by-day guide for the current date, derived from the stored plan.
-function todayGuide(plan) {
+function todayGuide(plan, showAlt) {
   if (!plan.workout || !plan.workout.length || !plan.meals) return '';
   const now = new Date();
   const wi = Math.min(plan.workout.length - 1, Math.max(0, Math.ceil(now.getDate() / 7) - 1));
@@ -1189,7 +1190,7 @@ function todayGuide(plan) {
     '<div class="info-box">' + esc(wk.week) + (wk.title ? ' — ' + esc(wk.title) : '') + (day ? ' · ' + esc(day.day) : '') + '<br>';
   if (day) {
     h += '🏃 လေ့ကျင့်ခန်း: <b>' + esc(day.text) + '</b>' +
-      (day.alt ? '<br><span class="small muted">👴 အသက်ကြီးသူများ အစားထိုး: ' + esc(day.alt) + '</span>' : '') + '<br>';
+      (showAlt && day.alt ? '<br><span class="small muted">👴 အသက်ကြီးသူများ အစားထိုး: ' + esc(day.alt) + '</span>' : '') + '<br>';
   }
   h += '🎯 ကယ်လိုရီ: <b>' + plan.calorieTarget + ' kcal</b><br>🍽️ ဒီနေ့ စားရန်:<br>' +
     plan.meals.map(m => '<div class="mt"><b>' + fmtTimeMm(m.time) + ' — ' + esc(m.name) + '</b> <span class="small muted">(' + m.items.length + ' မျိုး)</span>' +
@@ -1223,6 +1224,7 @@ out += '<h4>' + head + '</h4><div style="white-space:pre-wrap">' + body + '</div
 return out;
 }
 // Calories at the very top (Tryo's format)
+const showAlt = (parseFloat(activeProfile().age) || 0) >= 40; // exercise alternatives only from age 40
 let h = '<div class="info-box">🎯 ရည်မှန်းချက်: <b>' + esc(GOAL_LABEL[plan.goal] || '') + '</b><br>စားသင့်သော ကယ်လိုရီ: <b>' + plan.calorieTarget + ' kcal/နေ့</b></div>';
 h += '<h4>🍽️ စားသောက်ချိန် အချိန်ဇယား</h4>' +
 '<table><tr><th>အချိန်</th><th>အစာ</th><th>ပါဝင်မည့်အရာများ</th></tr>' +
@@ -1236,13 +1238,13 @@ plan.workout.map(w => '<div class="card" style="margin-bottom:8px"><b>' + esc(w.
 (w.days
   ? '<table class="mt"><tr><th>နေ့</th><th>လေ့ကျင့်ခန်း</th></tr>' +
     w.days.map(d => '<tr><td>' + esc(d.day) + '</td><td>' + esc(d.text) +
-      (d.alt ? '<div class="small muted">👴 အသက်ကြီးသူများ အစားထိုး: ' + esc(d.alt) + '</div>' : '') + '</td></tr>').join('') + '</table>'
+      (showAlt && d.alt ? '<div class="small muted">👴 အသက်ကြီးသူများ အစားထိုး: ' + esc(d.alt) + '</div>' : '') + '</td></tr>').join('') + '</table>'
   : '<ul style="margin:6px 0 0;padding-left:20px">' + (w.items || []).map(i => '<li>' + esc(i) + '</li>').join('') + '</ul>') +
 '</div>').join('');
 h += '<h4>🥗 စားသင့်သော အစားအစာများ</h4><div>' + plan.diet.eat.map(i => '<span class="tag">✅ ' + esc(i) + '</span>').join('') + '</div>';
 h += '<h4>🚫 ရှောင်ရန်များ</h4><div>' + plan.diet.avoid.map(i => '<span class="tag">❌ ' + esc(i) + '</span>').join('') + '</div>';
 h += '<div class="info-box mt">💡 ' + esc(plan.tip) + '</div>';
-h += todayGuide(plan);
+h += todayGuide(plan, showAlt);
 return h;
 }
 
