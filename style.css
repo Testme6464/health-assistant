@@ -32,13 +32,14 @@ body{
   position:sticky; top:0; z-index:50;
   background:var(--blue); color:#fff;
   display:flex; align-items:center; justify-content:space-between;
-  padding:10px 12px; gap:8px;
+  padding:10px 10px; gap:6px;
 }
-.topbar-title{font-weight:700; font-size:1.05rem; white-space:nowrap;}
-.topbar-clock{font-size:.85rem; opacity:.92; white-space:nowrap;}
-.topbar-profile{display:flex; align-items:center; gap:6px; min-width:0;}
+.topbar-title{font-weight:700; font-size:.95rem; white-space:nowrap; flex:0 0 auto;}
+.topbar-clock{font-size:.8rem; opacity:.92; white-space:nowrap; flex:0 0 auto;}
+.topbar-profile{display:flex; align-items:center; gap:6px; min-width:0; flex:1;}
+.topbar .icon-btn{width:34px; height:34px; font-size:1.1rem; flex:0 0 auto;}
 #profileSwitcher{
-  max-width:46vw; padding:8px 6px; border-radius:10px; border:none;
+  max-width:none; flex:1; min-width:0; padding:8px 6px; border-radius:10px; border:none;
   font-size:0.95rem; background:#fff; color:var(--text);
 }
 .icon-btn{
