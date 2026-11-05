@@ -42,7 +42,7 @@ function fmtTimeMm(hm) { // 24h -> Burmese 12h label
 
 // ---------------- store (localStorage, versioned) ----------------
 const STORE_KEY = 'healthAppV1';
-const APP_VERSION = '2026-11-05f'; // bump on every deploy; shown in Settings
+const APP_VERSION = '2026-11-05g'; // bump on every deploy; shown in Settings
 function defaultDB() {
   const p1 = uid();
   return {
@@ -1085,7 +1085,11 @@ function renderFood() {
     '</div>' +
     '<div id="foodTextPane">' +
       '<label>အစားအစာ ရှာရန် / ရိုက်ထည့်ရန်</label>' +
-      '<input id="foodSearch" list="foodList" placeholder="ဥပမာ ထမင်း၊ ကြက်သားဟင်း…">' +
+      '<div class="row" style="gap:0">' +
+        '<input id="foodSearch" list="foodList" placeholder="ဥပမာ ထမင်း၊ ကြက်သားဟင်း…" style="border-radius:10px 0 0 10px; flex:1;">' +
+        '<button class="btn" id="btnFoodDrop" aria-label="အစားအစာစာရင်း ဖွင့်ရန်" style="border-radius:0 10px 10px 0; min-height:48px; padding:0 18px; font-size:1.1rem;">▼</button>' +
+      '</div>' +
+      '<div id="foodDropList" class="drop-list hidden"></div>' +
       '<datalist id="foodList">' + foodOptions + '</datalist>' +
       '<div id="foodMatch" class="mt"></div>' +
       '<div class="form-grid"><div><label>ပမာဏ (စားသုံးမှုအရေအတွက်)</label>' +
@@ -1143,6 +1147,30 @@ function renderFood() {
     }
   });
   $('foodAmount').addEventListener('input', () => $('foodSearch').dispatchEvent(new Event('input')));
+  // tappable ▼ dropdown — datalist ရဲ့ native မြှားက Android မှာ နှိပ်မရ / မပေါ်တတ်လို့
+  const renderFoodDrop = () => {
+    const list = $('foodDropList');
+    const q = $('foodSearch').value.trim();
+    const foods = (window.FOOD_DB || []).map((f, i) => ({ f, i }))
+      .filter(x => !q || x.f.name.indexOf(q) !== -1);
+    list.innerHTML = foods.length
+      ? foods.map(x => '<div class="drop-item" data-idx="' + x.i + '"><b>' + esc(x.f.name) + '</b><span class="muted"> — ' + x.f.kcal + ' kcal / ' + esc(x.f.unit) + '</span></div>').join('')
+      : '<div class="drop-item muted">မတွေ့ပါ</div>';
+    list.querySelectorAll('[data-idx]').forEach(el => el.addEventListener('click', () => {
+      $('foodSearch').value = (window.FOOD_DB || [])[+el.dataset.idx].name;
+      list.classList.add('hidden');
+      $('foodSearch').dispatchEvent(new Event('input'));
+    }));
+  };
+  $('btnFoodDrop').addEventListener('click', () => {
+    const list = $('foodDropList');
+    if (list.classList.contains('hidden')) { renderFoodDrop(); list.classList.remove('hidden'); }
+    else list.classList.add('hidden');
+  });
+  $('foodSearch').addEventListener('input', () => {
+    const list = $('foodDropList');
+    if (!list.classList.contains('hidden')) renderFoodDrop();
+  });
   $('btnAddFoodText').addEventListener('click', () => {
     const box = $('foodMatch');
     const name = box.dataset.food || $('foodSearch').value.trim();
