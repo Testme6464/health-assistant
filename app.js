@@ -42,7 +42,7 @@ function fmtTimeMm(hm) { // 24h -> Burmese 12h label
 
 // ---------------- store (localStorage, versioned) ----------------
 const STORE_KEY = 'healthAppV1';
-const APP_VERSION = '2026-11-05q'; // bump on every deploy; shown in Settings
+const APP_VERSION = '2026-11-05r'; // bump on every deploy; shown in Settings
 function defaultDB() {
   const p1 = uid();
   return {
@@ -162,16 +162,19 @@ function bmiLabel(bmi) {
   if (bmi < 30) return 'ဝသည်';
   return 'အလွန်ဝသည်';
 }
-function calorieTarget(p) {
+function calorieTargetFor(p, goal) {
   if (DB.settings.calorieTargetMode === 'manual') return DB.settings.calorieTarget || 2000;
   const w = parseFloat(p.weight) || 60, h = parseFloat(p.height) || 160, a = parseFloat(p.age) || 30;
   let bmr = (p.gender === 'female')
     ? 10 * w + 6.25 * h - 5 * a - 161
     : 10 * w + 6.25 * h - 5 * a + 5;
   let tdee = bmr * 1.375; // light activity default
-  if (p.goal === 'lose') tdee -= 500;
-  else if (p.goal === 'gain') tdee += 300;
+  if (goal === 'lose') tdee -= 500;
+  else if (goal === 'gain') tdee += 300;
   return Math.max(1200, Math.round(tdee / 50) * 50);
+}
+function calorieTarget(p) {
+  return calorieTargetFor(p, p.goal);
 }
 const GOAL_LABEL = { lose: 'ကိုယ်အလေးချိန်လျှော့ချရန်', maintain: 'ထိန်းသိမ်းရန်', gain: 'တိုးရန်' };
 
@@ -952,71 +955,168 @@ function currentMonthKey() {
 const d = new Date();
 return d.getFullYear() + '-' + pad2(d.getMonth() + 1);
 }
+// Plan flow (2026-11-05, Tryo's format): tap generate → BMI line → pick 1 of 3 goals → plan in that goal's format.
+// Old-format plans (no `goal` field) are treated as not generated.
+let planChooseMode = null; // null | 'offline' | 'ai'
+const GOAL_BTN = { gain: '💪 ဝိတ်တိုးရန်', maintain: '⚖️ ထိန်းသိမ်းရန်', lose: '🏃 ဝိတ်ချရန်' };
 function renderPlan() {
-const p = activeProfile();
-const mk = currentMonthKey();
-const plan = DB.plans[p.id];
-let html = '<div class="card"><h3>🗓️ တစ်လစာ ကျန်းမာရေး အစီအစဉ်</h3>';
-html += '<div class="muted">' + esc(p.name) + ' · ' + MM_MONTHS[+mk.split('-')[1] - 1] + ' ' + mk.split('-')[0] + '</div>';
-if (!plan || plan.month!== mk) {
-html += '<div class="info-box mt">ဒီလအတွက် အစီအစဉ် မထုတ်ရသေးပါ</div>' +
-'<div class="row wrap"><button class="btn" id="btnGenPlan">📋 အစီအစဉ် ထုတ်မယ် (offline)</button>' +
-(aiProvider()? '<button class="btn secondary" id="btnGenPlanAI">✨ AI နဲ့ ထုတ်မယ်</button>': '') + '</div>' +
-(aiProvider()? '': '<div class="small muted mt">Settings မှာ API key ထည့်ထားရင် AI နဲ့ ပိုကိုယ်ပိုင် အစီအစဉ် ထုတ်နိုင်ပါတယ်</div>');
-} else {
-html += '<div class="ok-box mt">✅ ' + (plan.ai? 'AI နဲ့': 'offline စည်းမျဉ်းနဲ့') + ' ထုတ်ထားသော အစီအစဉ်</div>';
-html += '<div class="row wrap mb"><button class="btn small-btn secondary" id="btnRegenPlan">🔄 ပြန်ထုတ်မယ်</button></div>';
-html += planHtml(plan);
+  const p = activeProfile();
+  const mk = currentMonthKey();
+  const plan = DB.plans[p.id];
+  const validPlan = plan && plan.month === mk && plan.goal;
+  let html = '<div class="card"><h3>🗓️ တစ်လစာ ကျန်းမာရေး အစီအစဉ်</h3>';
+  html += '<div class="muted">' + esc(p.name) + ' · ' + MM_MONTHS[+mk.split('-')[1] - 1] + ' ' + mk.split('-')[0] + '</div>';
+  if (!validPlan) {
+    if (!planChooseMode) {
+      html += '<div class="info-box mt">ဒီလအတွက် အစီအစဉ် မထုတ်ရသေးပါ</div>' +
+        '<div class="row wrap"><button class="btn" id="btnGenPlan">📋 အစီအစဉ် ထုတ်မယ် (offline)</button>' +
+        (aiProvider() ? '<button class="btn secondary" id="btnGenPlanAI">✨ AI နဲ့ ထုတ်မယ်</button>' : '') + '</div>' +
+        (aiProvider() ? '' : '<div class="small muted mt">Settings မှာ API key ထည့်ထားရင် AI နဲ့ ပိုကိုယ်ပိုင် အစီအစဉ် ထုတ်နိုင်ပါတယ်</div>');
+    } else {
+      // STEP 1: BMI assessment line from the profile
+      const bmi = calcBMI(p);
+      html += '<div class="info-box mt">📊 BMI: <b>' + (bmi ? bmi.toFixed(1) : '?') + '</b> — ' + bmiLabel(bmi) + '</div>';
+      // STEP 2: pick one of the three goals
+      html += '<h4>ရည်မှန်းချက် ရွေးပါ</h4><div class="row wrap">' +
+        ['gain', 'maintain', 'lose'].map(g =>
+          '<button class="btn" data-goal="' + g + '">' + GOAL_BTN[g] + (p.goal === g ? ' (လက်ရှိ)' : '') + '</button>').join('') + '</div>' +
+        '<div class="row wrap mt"><button class="btn small-btn secondary" id="btnBackPlan">← ပြန်သွားမယ်</button></div>';
+    }
+  } else {
+    html += '<div class="ok-box mt">✅ ' + (plan.ai ? 'AI နဲ့' : 'offline စည်းမျဉ်းနဲ့') + ' ထုတ်ထားသော အစီအစဉ် · ရည်မှန်းချက်: ' + esc(GOAL_LABEL[plan.goal] || '') + '</div>';
+    html += '<div class="row wrap mb"><button class="btn small-btn secondary" id="btnRegenPlan">🔄 ပြန်ထုတ်မယ်</button></div>';
+    html += planHtml(plan);
+  }
+  html += '</div>';
+  $('view-plan').innerHTML = html;
+  const g = $('btnGenPlan');
+  if (g) g.addEventListener('click', () => { planChooseMode = 'offline'; renderPlan(); });
+  const ga = $('btnGenPlanAI');
+  if (ga) ga.addEventListener('click', () => { planChooseMode = 'ai'; renderPlan(); });
+  const back = $('btnBackPlan');
+  if (back) back.addEventListener('click', () => { planChooseMode = null; renderPlan(); });
+  $('view-plan').querySelectorAll('[data-goal]').forEach(b => b.addEventListener('click', () => {
+    const goal = b.dataset.goal;
+    const mode = planChooseMode;
+    planChooseMode = null;
+    if (mode === 'ai') {
+      $('view-plan').innerHTML = '<div class="card"><h3>🗓️ တစ်လစာ ကျန်းမာရေး အစီအစဉ်</h3><div class="info-box mt">✨ AI အစီအစဉ် ထုတ်လုပ်နေသည်…</div></div>';
+      generateAiPlan(goal);
+    } else {
+      generateGoalPlan(p, goal); renderPlan(); toast('အစီအစဉ် ထုတ်ပြီးပါပြီ ✅');
+    }
+  }));
+  const rg = $('btnRegenPlan');
+  if (rg) rg.addEventListener('click', () => { delete DB.plans[p.id]; saveDB(); renderPlan(); });
 }
-html += '</div>';
-$('view-plan').innerHTML = html;
-const g = $('btnGenPlan');
-if (g) g.addEventListener('click', () => { generateRulePlan(p); renderPlan(); toast('အစီအစဉ် ထုတ်ပြီးပါပြီ ✅');});
-const ga = $('btnGenPlanAI');
-if (ga) ga.addEventListener('click', generateAiPlan);
-const rg = $('btnRegenPlan');
-if (rg) rg.addEventListener('click', () => { delete DB.plans[p.id]; saveDB(); renderPlan();});
-}
-function generateRulePlan(p) {
-const kcal = calorieTarget(p);
-const hasDiabetes = p.conditions.some(c => /ဆီးချို|diabetes/i.test(c));
-const hasBP = p.conditions.some(c => /သွေးတိုး|blood pressure|hypertension/i.test(c));
-const meals = [
-{ name: '🌅 မနက်စာ', time: '07:30', items: hasDiabetes
-? ['ပဲပြုတ်ထမင်း ၁ ပန်းကန်', 'ကြက်ဥပြုတ် ၁ လုံး', 'ဟင်းသီးဟင်းရွက်']
-: ['ထမင်း ၁ ပန်းကန်', 'ကြက်ဥကြော်/ပြုတ် ၁ လုံး', 'ဟင်းရွက်ကြော်']},
-{ name: '☀️ နေ့လယ်စာ', time: '12:30', items: ['ထမင်း ၁ ပန်းကန်', 'အသားဟင်း ၁ ခွက် (ကြက်/ငါး)', 'ဟင်းရွက် ၂ မျိုး', hasBP? 'ဆားလျှော့': 'အရွက်သုပ်']},
-{ name: '🍵 အဆာပြေ', time: '15:30', items: ['အသီးအနှံ ၁ လုံး', 'ပဲနို့/ဒိန်ချဉ် ၁ ခွက်']},
-{ name: '🌙 ညစာ', time: '18:30', items: p.goal === 'lose'
-? ['ထမင်း ပန်းကန်ဝက်', 'ငါးဟင်း/အရွက်ဟင်း', 'ဟင်းချို']
-: ['ထမင်း ၁ ပန်းကန်', 'အသားဟင်း', 'ဟင်းသီးဟင်းရွက်']},
-];
-const workoutWeeks = [
-{ week: 'အပတ် ၁', title: 'ပေါ့ပေါ့ပါးပါး စတင်ခြင်း', items: ['နေ့တိုင်း လမ်းလျှောက်ခြင်း မိနစ် ၂၀', 'မနက် အကြောဆန့်ခြင်း ၅ မိနစ်', 'တစ်ပတ် ၁ ရက် အနားယူခြင်း']},
-{ week: 'အပတ် ၂', title: 'အရှိန်မြှင့်ခြင်း', items: ['လမ်းလျှောက်ခြင်း မိနစ် ၃၀ (သို့) စက်ဘီးစီးခြင်း', 'Stretching ၁၀ မိနစ်', 'တနင်္လာနေ့–သောကြာနေ့ ပုံမှန်လုပ်ခြင်း']},
-{ week: 'အပတ် ၃', title: 'ကြံ့ခိုင်မှု တည်ဆောက်ခြင်း', items: ['လမ်းမြန်မြန်လျှောက်ခြင်း မိနစ် ၄၀', 'ကိုယ်အလေးချိန်သုံး လေ့ကျင့်ခန်း (squat, push-up) ၁၅ မိနစ်', 'တစ်ပတ် ၅ ရက်']},
-{ week: 'အပတ် ၄', title: 'ထိန်းသိမ်းပြီး တိုးတက်ခြင်း', items: ['လမ်း/ပြေး မိနစ် ၄၅', 'ကြွက်သားလေ့ကျင့်ခန်း မိနစ် ၂၀', 'တစ်ပတ် ၅–၆ ရက်', 'ရလဒ် ပြန်သုံးသပ်ခြင်း']},
-];
-const diet = {
-eat: ['ဟင်းသီးဟင်းရွက် အမျိုးမျိုး', 'အသီးအနှံ', 'ငါး၊ ကြက် (အဆီနည်း)', 'ပဲ၊ တို့ဟူး', 'ဆန်လုံးညို (ရရင်)']
-.concat(hasDiabetes? ['အချိုနည်းသော အစားအစာများ']: []).concat(hasBP? ['ပိုတက်စီယမ်များသော ငှက်ပျောသီး']: []),
-avoid: ['အချိုရည်၊ ရေခဲမုန့်', 'အကြော်အလှော် များများ', 'အရက်'].concat(hasDiabetes? ['သကြား၊ မုန့်ချို']: []).concat(hasBP? ['ဆား၊ ငံပြာရည်များများ']: [])
+// ---- goal-based plan content (2026-11-05, Tryo's format) ----
+// Meals per goal: time + food groups + WHY each meal is eaten.
+const GOAL_MEALS = {
+  gain: [
+    { name: '🌅 မနက်စာ', time: '07:30', items: ['ထမင်း ၁ ပန်းကန်', 'ကြက်ဥပြုတ် ၂ လုံး', 'ပဲနို့ ၁ ခွက်'], why: 'ပရိုတင်းများလို့ ကြွက်သားတည်ဆောက်ဖို့ ကူညီပြီး တစ်နေ့တာအတွက် အားအင်ဖြည့်ပေးတယ်' },
+    { name: '☀️ နေ့လယ်စာ', time: '12:30', items: ['ထမင်း ၁ ပန်းကန်', 'အသားဟင်း ၁ ခွက် (ကြက်/ငါး)', 'ဟင်းရွက် ၂ မျိုး'], why: 'ကယ်လိုရီနဲ့ ပရိုတင်း ဖြည့်ဖို့ — ဝိတ်တိုးဖို့ အဓိက အစာပါ' },
+    { name: '🍵 အဆာပြေ', time: '15:30', items: ['ငှက်ပျောသီး ၁ လုံး', 'ပဲနို့/ဒိန်ချဉ် ၁ ခွက်', 'မြေပဲ ၁ လက်'], why: 'ထမင်းကြားမှာ ကယ်လိုရီ ထပ်ဖြည့်ပေးလို့ တစ်နေ့ စုစုပေါင်း ကယ်လိုရီ ပြည့်စေတယ်' },
+    { name: '🌙 ညစာ', time: '18:30', items: ['ထမင်း ၁ ပန်းကန်', 'ငါးဟင်း/ကြက်ဟင်း', 'ဟင်းချို'], why: 'ညမှာ ပရိုတင်းဖြည့်ပြီး အိပ်နေစဉ် ကြွက်သား ပြန်လည်တည်ဆောက်ဖို့ ကူညီတယ်' },
+  ],
+  lose: [
+    { name: '🌅 မနက်စာ', time: '07:30', items: ['ပဲပြုတ်ထမင်း ၁ ပန်းကန်', 'ကြက်ဥပြုတ် ၁ လုံး', 'ဟင်းသီးဟင်းရွက်'], why: 'အမျှင်ဓာတ်များလို့ ဗိုက်ပြည့်တယ်၊ ကယ်လိုရီနည်းတယ်' },
+    { name: '☀️ နေ့လယ်စာ', time: '12:30', items: ['ထမင်း ပန်းကန်ဝက်', 'ငါးဟင်း ၁ ခွက်', 'ဟင်းရွက် ၂ မျိုး', 'အရွက်သုပ်'], why: 'ထမင်းလျှော့ပြီး ဟင်းရွက်များများစားလို့ ကယ်လိုရီနည်းနည်းနဲ့ အာဟာရပြည့်တယ်' },
+    { name: '🍵 အဆာပြေ', time: '15:30', items: ['အသီးအနှံ ၁ လုံး (ပန်းသီး/ငှက်ပျောသီး)'], why: 'ဆာလာတဲ့အချိန် အချိုမုန့်အစား အသီးစားလို့ ကယ်လိုရီ မတက်ဘူး' },
+    { name: '🌙 ညစာ', time: '18:30', items: ['ထမင်း ပန်းကန်ဝက်', 'အရွက်ဟင်း', 'ဟင်းချို'], why: 'ညမှာ ကယ်လိုရီ လျှော့စားလို့ ခန္ဓာကိုယ်က သိုလှောင်ထားတဲ့ အဆီကို သုံးစေတယ်' },
+  ],
+  maintain: [
+    { name: '🌅 မနက်စာ', time: '07:30', items: ['ထမင်း ၁ ပန်းကန်', 'ကြက်ဥ ၁ လုံး', 'ဟင်းသီးဟင်းရွက်'], why: 'တစ်နေ့တာ အားအင်အတွက် မျှတတဲ့ အာဟာရပေးတယ်' },
+    { name: '☀️ နေ့လယ်စာ', time: '12:30', items: ['ထမင်း ၁ ပန်းကန်', 'အသားဟင်း ၁ ခွက် (ကြက်/ငါး)', 'ဟင်းရွက် ၂ မျိုး'], why: 'ပရိုတင်းနဲ့ အမျှင်ဓာတ် မျှတစွာ ပါလို့ နေ့လည်ပိုင်း အားပြည့်စေတယ်' },
+    { name: '🍵 အဆာပြေ', time: '15:30', items: ['အသီးအနှံ ၁ လုံး', 'ဒိန်ချဉ် ၁ ခွက်'], why: 'ညနေပိုင်း ဆာခြင်းကို ထိန်းပေးပြီး အချိုမုန့် မစားမိအောင် ကာကွယ်တယ်' },
+    { name: '🌙 ညစာ', time: '18:30', items: ['ထမင်း ၁ ပန်းကန်', 'အသားဟင်း', 'ဟင်းသီးဟင်းရွက်'], why: 'ညစာ မျှတစွာ စားလို့ ကိုယ်အလေးချိန် တည်ငြိမ်စေတယ်' },
+  ],
 };
-DB.plans[p.id] = {
-month: currentMonthKey(), createdAt: new Date().toISOString(), ai: false,
-meals: meals, sleep: { bed: DB.reminders.bedtime || '22:30', wake: '06:00'},
-workout: workoutWeeks, diet: diet, calorieTarget: kcal,
-tip: 'ရေများများသောက်ပြီး ထမင်းစားပြီးတိုင်း လမ်းလျှောက်ပါ။'
+// 7-day exercise base per goal (Mon..Sun); weeks scale the minutes up.
+const GOAL_WORKOUT = {
+  gain: {
+    days: [
+      { day: 'တနင်္လာ', act: 'ကြွက်သားလေ့ကျင့်ခန်း (squat, push-up)', min: 20 },
+      { day: 'အင်္ဂါ', act: 'လမ်းလျှောက်', min: 30 },
+      { day: 'ဗုဒ္ဓဟူး', act: 'ကြွက်သားလေ့ကျင့်ခန်း (လက်မောင်း၊ ရင်)', min: 20 },
+      { day: 'ကြာသပတေး', act: 'အနားယူ / အကြောဆန့်', min: 10 },
+      { day: 'သောကြာ', act: 'ကြွက်သားလေ့ကျင့်ခန်း (ခြေထောက်၊ ဗိုက်)', min: 20 },
+      { day: 'စနေ', act: 'လမ်းလျှောက် / စက်ဘီးစီး', min: 30 },
+      { day: 'တနင်္ဂနွေ', act: 'အနားယူ', min: 0 },
+    ],
+  },
+  lose: {
+    days: [
+      { day: 'တနင်္လာ', act: 'လမ်းမြန်မြန်လျှောက်', min: 40 },
+      { day: 'အင်္ဂါ', act: 'ပြေး / စက်ဘီးစီး', min: 30 },
+      { day: 'ဗုဒ္ဓဟူး', act: 'ကိုယ်အလေးချိန်သုံး လေ့ကျင့်ခန်း', min: 20 },
+      { day: 'ကြာသပတေး', act: 'လမ်းလျှောက်', min: 40 },
+      { day: 'သောကြာ', act: 'ပြေး / စက်ဘီးစီး', min: 30 },
+      { day: 'စနေ', act: 'လမ်းလျှောက်', min: 45 },
+      { day: 'တနင်္ဂနွေ', act: 'အနားယူ / stretching', min: 10 },
+    ],
+  },
+  maintain: {
+    days: [
+      { day: 'တနင်္လာ', act: 'လမ်းလျှောက်', min: 30 },
+      { day: 'အင်္ဂါ', act: 'ကြွက်သားလေ့ကျင့်ခန်း', min: 15 },
+      { day: 'ဗုဒ္ဓဟူး', act: 'လမ်းလျှောက်', min: 30 },
+      { day: 'ကြာသပတေး', act: 'အနားယူ / stretching', min: 10 },
+      { day: 'သောကြာ', act: 'လမ်း / ပြေး', min: 30 },
+      { day: 'စနေ', act: 'ကြွက်သားလေ့ကျင့်ခန်း', min: 15 },
+      { day: 'တနင်္ဂနွေ', act: 'အနားယူ', min: 0 },
+    ],
+  },
 };
-saveDB();
+const WEEK_TITLES = ['ပေါ့ပေါ့ပါးပါး စတင်ခြင်း', 'အရှိန်မြှင့်ခြင်း', 'ကြံ့ခိုင်မှု တည်ဆောက်ခြင်း', 'ထိန်းသိမ်းပြီး တိုးတက်ခြင်း'];
+const WEEK_MIN_FACTOR = [1, 1.15, 1.3, 1.3];
+function buildWorkoutWeeks(goal) {
+  const base = (GOAL_WORKOUT[goal] || GOAL_WORKOUT.maintain).days;
+  return WEEK_TITLES.map((title, wi) => ({
+    week: 'အပတ် ' + (wi + 1), title: title,
+    days: base.map(d => ({
+      day: d.day,
+      text: d.min > 0 ? d.act + ' ' + Math.round(d.min * WEEK_MIN_FACTOR[wi]) + ' မိနစ်' : d.act,
+    })),
+  }));
 }
-async function generateAiPlan() {
-const p = activeProfile();
-const btn = $('btnGenPlanAI');
-const onRetry = (n, total, note) => { btn.textContent = note === 'wait' ? 'ခဏစောင့်နေသည်…' : ('AI ထုတ်လုပ်နေသည်… (' + n + '/' + total + ')'); };
-btn.disabled = true; btn.textContent = 'AI ထုတ်လုပ်နေသည်…';
-// Exact headers the prompt demands — used to validate the AI actually returned a plan.
-const PLAN_HEADERS = ['စားသောက်ချိန်', 'အိပ်စက်ချိန်', 'လေ့ကျင့်ခန်း', 'စားသင့်', 'ရှောင်'];
+const GOAL_TIP = {
+  gain: 'ထမင်းစားချိန်မှန်မှန်စားပြီး ပရိုတင်းများများ ဖြည့်ပါ — ဝိတ်တိုးဖို့ စားချိန်မှန်ဖို့ အရေးကြီးတယ်။',
+  lose: 'ရေများများသောက်ပြီး ထမင်းစားပြီးတိုင်း လမ်းလျှောက်ပါ။',
+  maintain: 'အစားအသောက် မျှတစွာစားပြီး နေ့တိုင်း လှုပ်ရှားပါ။',
+};
+function generateGoalPlan(p, goal) {
+  const kcal = calorieTargetFor(p, goal);
+  const hasDiabetes = p.conditions.some(c => /ဆီးချို|diabetes/i.test(c));
+  const hasBP = p.conditions.some(c => /သွေးတိုး|blood pressure|hypertension/i.test(c));
+  const meals = JSON.parse(JSON.stringify(GOAL_MEALS[goal] || GOAL_MEALS.maintain));
+  if (hasDiabetes) {
+    meals[0].items = meals[0].items.map(it => it.replace('ထမင်း ၁ ပန်းကန်', 'ပဲပြုတ်ထမင်း ၁ ပန်းကန်'));
+  }
+  const diet = {
+    eat: (goal === 'gain'
+      ? ['ဟင်းသီးဟင်းရွက် အမျိုးမျိုး', 'အသီးအနှံ', 'ငါး၊ ကြက် (အဆီနည်း)', 'ကြက်ဥ', 'ပဲ၊ တို့ဟူး', 'ပဲနို့၊ ဒိန်ချဉ်', 'ဆန်လုံးညို (ရရင်)']
+      : goal === 'lose'
+      ? ['ဟင်းသီးဟင်းရွက် အမျိုးမျိုး', 'အသီးအနှံ', 'ငါး (အဆီနည်း)', 'ပဲ၊ တို့ဟူး', 'ဆန်လုံးညို (ရရင်)']
+      : ['ဟင်းသီးဟင်းရွက် အမျိုးမျိုး', 'အသီးအနှံ', 'ငါး၊ ကြက် (အဆီနည်း)', 'ပဲ၊ တို့ဟူး', 'ဆန်လုံးညို (ရရင်)'])
+      .concat(hasDiabetes ? ['အချိုနည်းသော အစားအစာများ'] : []).concat(hasBP ? ['ပိုတက်စီယမ်များသော ငှက်ပျောသီး'] : []),
+    avoid: ['အချိုရည်၊ ရေခဲမုန့်', 'အကြော်အလှော် များများ', 'အရက်']
+      .concat(hasDiabetes ? ['သကြား၊ မုန့်ချို'] : []).concat(hasBP ? ['ဆား၊ ငံပြာရည်များများ'] : []),
+  };
+  DB.plans[p.id] = {
+    month: currentMonthKey(), createdAt: new Date().toISOString(), ai: false, goal: goal,
+    meals: meals, sleep: { bed: DB.reminders.bedtime || '22:30', wake: '06:00' },
+    workout: buildWorkoutWeeks(goal), diet: diet, calorieTarget: kcal,
+    tip: GOAL_TIP[goal] || GOAL_TIP.maintain,
+  };
+  saveDB();
+}
+async function generateAiPlan(goal) {
+  const p = activeProfile();
+  const btn = $('btnGenPlanAI');
+  const onRetry = (n, total, note) => { if (btn) btn.textContent = note === 'wait' ? 'ခဏစောင့်နေသည်…' : ('AI ထုတ်လုပ်နေသည်… (' + n + '/' + total + ')'); };
+  if (btn) { btn.disabled = true; btn.textContent = 'AI ထုတ်လုပ်နေသည်…'; }
+  // Exact headers the prompt demands — used to validate the AI actually returned a plan.
+  const PLAN_HEADERS = ['ကယ်လိုရီ', 'စားသောက်ချိန်', 'လေ့ကျင့်ခန်း', 'လမ်းညွှန်'];
 function planHeaderHits(ans) { return PLAN_HEADERS.filter(h => ans.includes(h)).length; }
 function planOutputOk(ans) {
   const a = ans.replace(/\b(kcal|kg|cm|min|AM|PM)\b/gi, '');
@@ -1027,11 +1127,12 @@ const PLAN_PROMPT =
 'Reply ONLY in Burmese using standard Unicode Myanmar script (never Zawgyi encoding). ' +
 'Every word must be Burmese except units like kcal, kg, cm, min. Do not use English words. ' +
 'Study the health profile below CAREFULLY. Tailor EVERY section to this person\'s specific conditions, ' +
-'medications, age, BMI and goal: name their conditions explicitly and add one short line in each section ' +
+'medications, age, BMI and chosen goal: name their conditions explicitly and add one short line in each section ' +
 'explaining why the advice suits them. Never give generic advice that ignores their conditions. ' +
-'Output using EXACTLY these 5 section headers, in this order:\n' +
-'## 🍽️ စားသောက်ချိန်\n## 😴 အိပ်စက်ချိန်\n## 🏃 လေ့ကျင့်ခန်း (၄ ပတ်)\n## 🥗 စားသင့်သောအစားအစာများ\n## 🚫 ရှောင်ရန်များ\n' +
-'Be specific: exact times, dish names with portions and kcal, a day-by-day 4-week workout schedule with durations. ' +
+'Output using EXACTLY these 4 section headers, in this order:\n' +
+'## 🎯 စားသင့်သော ကယ်လိုရီ\n## 🍽️ စားသောက်ချိန်\n## 🏃 လေ့ကျင့်ခန်း (၄ ပတ်)\n## 📅 တစ်ရက်ချင်းစာ လမ်းညွှန်\n' +
+'Be specific: exact times, dish names with portions and kcal, one reason line per meal explaining why to eat it, ' +
+'a 7-day exercise schedule for each of the 4 weeks with durations, and a day-by-day guide for the current date. ' +
 'Do not ask questions. No preamble. No medical diagnosis.';
 try {
 const bmi = calcBMI(p);
@@ -1041,11 +1142,12 @@ const userPrompt =
 'Age: ' + (p.age || '?') + ', Gender: ' + (p.gender || '?') + '\n' +
 'Height: ' + (p.height || '?') + ' cm, Weight: ' + (p.weight || '?') + ' kg, BMI: ' +
 (bmi ? bmi.toFixed(1) + ' (' + bmiLabel(bmi) + ')' : '?') + '\n' +
-'Health goal: ' + (GOAL_LABEL[p.goal] || '') + '\n' +
+'Health goal (chosen by the user): ' + (GOAL_LABEL[goal] || GOAL_LABEL[p.goal] || '') + '\n' +
 'Existing health conditions (MUST tailor the plan to these): ' + (p.conditions.join(', ') || 'none') + '\n' +
 'Allergies: ' + (p.allergies.join(', ') || 'none') + '\n' +
 'Current medications: ' + (meds.map(m => m.name + (m.dosage ? ' ' + m.dosage : '') + (m.reason ? ' (' + m.reason + ')' : '')).join('; ') || 'none') + '\n' +
-'Daily calorie target: ' + calorieTarget(p) + ' kcal\n' +
+'Daily calorie target: ' + calorieTargetFor(p, goal || p.goal) + ' kcal\n' +
+'Today: ' + todayStr() + ' (' + ['တနင်္ဂနွေ', 'တနင်္လာ', 'အင်္ဂါ', 'ဗုဒ္ဓဟူး', 'ကြာသပတေး', 'သောကြာ', 'စနေ'][new Date().getDay()] + ') — the day-by-day guide must start from today\n' +
 'Usual bedtime: ' + (DB.reminders.bedtime || '?');
 const isQwenPlan = /qwen/i.test(DB.settings.customModel || '');
 const planPrompt = PLAN_PROMPT + (isQwenPlan ? ' Keep the entire plan concise: under ~450 words total.' : '');
@@ -1053,22 +1155,39 @@ let ans = await aiChat(planPrompt, userPrompt, onRetry);
 if (!planOutputOk(ans)) {
   // One strict retry; then keep whichever version is better — never fail outright
   // over minor format slips (a weak free model may still mix in some English).
-  const retry = await aiChat(planPrompt + '\nSTRICT: all words Burmese except units kcal/kg/cm/min; use the 5 headers exactly; no questions.', userPrompt, onRetry);
+  const retry = await aiChat(planPrompt + '\nSTRICT: all words Burmese except units kcal/kg/cm/min; use the 4 headers exactly; no questions.', userPrompt, onRetry);
   if (planOutputOk(retry)) ans = retry;
   else if (planHeaderHits(retry) > planHeaderHits(ans)) ans = retry;
 }
 if (!ans || ans.length < 150) throw new Error('AI အဖြေ ပုံစံမမှန်ပါ');
 const snap = 'အသက် ' + (p.age || '?') + ' · BMI ' + (bmi ? bmi.toFixed(1) + ' (' + bmiLabel(bmi) + ')' : '?') +
-' · ရည်မှန်းချက်: ' + (GOAL_LABEL[p.goal] || '') +
+' · ရည်မှန်းချက်: ' + (GOAL_LABEL[goal] || GOAL_LABEL[p.goal] || '') +
 ' · အခံရောဂါ: ' + (p.conditions.join(', ') || 'မရှိ') +
 ' · သောက်နေသောဆေး: ' + (meds.map(m => m.name).join(', ') || 'မရှိ');
-DB.plans[p.id] = { month: currentMonthKey(), createdAt: new Date().toISOString(), ai: true, rawAi: ans, snap: snap };
+DB.plans[p.id] = { month: currentMonthKey(), createdAt: new Date().toISOString(), ai: true, goal: goal || p.goal, rawAi: ans, snap: snap };
 saveDB(); renderPlan(); toast('AI အစီအစဉ် ရပြီးပါပြီ ✅');
 } catch (e) {
 toast('AI ခေါ်ဆို၍မရပါ: ' + e.message + ' — offline နဲ့ ထုတ်ကြည့်ပါ');
-btn.disabled = false; btn.textContent = '✨ AI နဲ့ ထုတ်မယ်';
+if (btn) { btn.disabled = false; btn.textContent = '✨ AI နဲ့ ထုတ်မယ်'; }
+renderPlan();
 }
 }
+// Day-by-day guide for the current date, derived from the stored plan.
+function todayGuide(plan) {
+  if (!plan.workout || !plan.workout.length || !plan.meals) return '';
+  const now = new Date();
+  const wi = Math.min(plan.workout.length - 1, Math.max(0, Math.ceil(now.getDate() / 7) - 1));
+  const di = (now.getDay() + 6) % 7; // Mon=0 .. Sun=6
+  const wk = plan.workout[wi];
+  const day = wk.days && wk.days[di];
+  let h = '<h4>📅 ဒီနေ့ (' + fmtDateMm(todayStr()) + ') လမ်းညွှန်</h4>' +
+    '<div class="info-box">' + esc(wk.week) + (wk.title ? ' — ' + esc(wk.title) : '') + (day ? ' · ' + esc(day.day) : '') + '<br>';
+  if (day) h += '🏃 လေ့ကျင့်ခန်း: <b>' + esc(day.text) + '</b><br>';
+  h += '🎯 ကယ်လိုရီ: <b>' + plan.calorieTarget + ' kcal</b><br>🍽️ ဒီနေ့ စားရန်:<br>' +
+    plan.meals.map(m => '• ' + fmtTimeMm(m.time) + ' — ' + esc(m.name) + ': ' + m.items.map(esc).join(', ')).join('<br>') + '</div>';
+  return h;
+}
+
 function planHtml(plan) {
 if (plan.ai && plan.rawAi) {
 // Render "## Header" markdown lines as real section headers.
@@ -1084,18 +1203,26 @@ out += '<h4>' + head + '</h4><div style="white-space:pre-wrap">' + body + '</div
 }
 return out;
 }
-let h = '<h4>🍽️ စားသောက်ချိန် အချိန်ဇယား (ရည်မှန်း ' + plan.calorieTarget + ' kcal/နေ့)</h4>' +
+// Calories at the very top (Tryo's format)
+let h = '<div class="info-box">🎯 ရည်မှန်းချက်: <b>' + esc(GOAL_LABEL[plan.goal] || '') + '</b><br>စားသင့်သော ကယ်လိုရီ: <b>' + plan.calorieTarget + ' kcal/နေ့</b></div>';
+h += '<h4>🍽️ စားသောက်ချိန် အချိန်ဇယား</h4>' +
 '<table><tr><th>အချိန်</th><th>အစာ</th><th>ပါဝင်မည့်အရာများ</th></tr>' +
 plan.meals.map(m => '<tr><td><b>' + fmtTimeMm(m.time) + '</b><div class="small muted">' + m.time + '</div></td><td>' +
-esc(m.name) + '</td><td>' + m.items.map(esc).join('<br>') + '</td></tr>').join('') + '</table>';
+esc(m.name) + '</td><td>' + m.items.map(esc).join('<br>') +
+(m.why ? '<div class="small muted">💡 ' + esc(m.why) + '</div>' : '') + '</td></tr>').join('') + '</table>';
 h += '<h4>😴 အိပ်စက်ချိန်</h4><div class="info-box">အိပ်ရာဝင်ချိန်: <b>' + fmtTimeMm(plan.sleep.bed) +
 '</b> · နိုးထချိန်: <b>' + fmtTimeMm(plan.sleep.wake) + '</b> (၇.၅ နာရီ)</div>';
-h += '<h4>🏃 ၄ ပတ် လေ့ကျင့်ခန်း အစီအစဉ်</h4>' +
-plan.workout.map(w => '<div class="card" style="margin-bottom:8px"><b>' + esc(w.week) + ' — ' + esc(w.title) +
-'</b><ul style="margin:6px 0 0;padding-left:20px">' + w.items.map(i => '<li>' + esc(i) + '</li>').join('') + '</ul></div>').join('');
+h += '<h4>🏃 ၄ ပတ် လေ့ကျင့်ခန်း အစီအစဉ် (၇ ရက်စာ)</h4>' +
+plan.workout.map(w => '<div class="card" style="margin-bottom:8px"><b>' + esc(w.week) + (w.title ? ' — ' + esc(w.title) : '') + '</b>' +
+(w.days
+  ? '<table class="mt"><tr><th>နေ့</th><th>လေ့ကျင့်ခန်း</th></tr>' +
+    w.days.map(d => '<tr><td>' + esc(d.day) + '</td><td>' + esc(d.text) + '</td></tr>').join('') + '</table>'
+  : '<ul style="margin:6px 0 0;padding-left:20px">' + (w.items || []).map(i => '<li>' + esc(i) + '</li>').join('') + '</ul>') +
+'</div>').join('');
 h += '<h4>🥗 စားသင့်သော အစားအစာများ</h4><div>' + plan.diet.eat.map(i => '<span class="tag">✅ ' + esc(i) + '</span>').join('') + '</div>';
 h += '<h4>🚫 ရှောင်ရန်များ</h4><div>' + plan.diet.avoid.map(i => '<span class="tag">❌ ' + esc(i) + '</span>').join('') + '</div>';
 h += '<div class="info-box mt">💡 ' + esc(plan.tip) + '</div>';
+h += todayGuide(plan);
 return h;
 }
 
