@@ -104,6 +104,13 @@ input[type="time"]{width:auto;}
   display:inline-block; background:var(--blue-soft); color:var(--blue-dark);
   border-radius:20px; padding:4px 12px; margin:3px 4px 3px 0; font-size:0.88rem;
 }
+/* meal food-group boxes (plan tab): one box = one kind to eat per meal */
+.food-box{
+  border:1px solid #cfe0f2; border-radius:8px; padding:5px 8px; margin:4px 0;
+  background:#f7fbff;
+}
+.food-box b{color:var(--blue-dark);}
+.food-box div{margin-top:1px;}
 .tag .x{cursor:pointer; margin-left:6px; color:var(--red); font-weight:700;}
 .alert{background:var(--red-soft); border:1px solid #f3c1c1; color:#8f2424; border-radius:12px; padding:10px 12px; margin-bottom:10px;}
 .warn-box{background:var(--amber-soft); border:1px solid #eed9a8; color:#7a5410; border-radius:12px; padding:10px 12px; margin-bottom:10px;}

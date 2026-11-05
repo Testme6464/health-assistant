@@ -42,7 +42,7 @@ function fmtTimeMm(hm) { // 24h -> Burmese 12h label
 
 // ---------------- store (localStorage, versioned) ----------------
 const STORE_KEY = 'healthAppV1';
-const APP_VERSION = '2026-11-05s'; // bump on every deploy; shown in Settings
+const APP_VERSION = '2026-11-05t'; // bump on every deploy; shown in Settings
 function defaultDB() {
   const p1 = uid();
   return {
@@ -1191,6 +1191,16 @@ function todayGuide(plan) {
   return h;
 }
 
+// One food-group box per meal item: "Label — options" splits into a labeled box;
+// a plain item becomes a box on its own. One box = one kind to eat.
+function foodBoxHtml(it) {
+  const parts = String(it).split(' — ');
+  if (parts.length > 1) {
+    return '<div class="food-box"><b>' + esc(parts[0]) + '</b><div>' + esc(parts.slice(1).join(' — ')) + '</div></div>';
+  }
+  return '<div class="food-box">' + esc(it) + '</div>';
+}
+
 function planHtml(plan) {
 if (plan.ai && plan.rawAi) {
 // Render "## Header" markdown lines as real section headers.
@@ -1211,7 +1221,7 @@ let h = '<div class="info-box">🎯 ရည်မှန်းချက်: <b>' +
 h += '<h4>🍽️ စားသောက်ချိန် အချိန်ဇယား</h4>' +
 '<table><tr><th>အချိန်</th><th>အစာ</th><th>ပါဝင်မည့်အရာများ</th></tr>' +
 plan.meals.map(m => '<tr><td><b>' + fmtTimeMm(m.time) + '</b><div class="small muted">' + m.time + '</div></td><td>' +
-esc(m.name) + '</td><td>' + m.items.map(esc).join('<br>') +
+esc(m.name) + '<div class="small muted">' + m.items.length + ' မျိုးစားရန်</div></td><td>' + m.items.map(foodBoxHtml).join('') +
 (m.why ? '<div class="small muted">💡 ' + esc(m.why) + '</div>' : '') + '</td></tr>').join('') + '</table>';
 h += '<h4>😴 အိပ်စက်ချိန်</h4><div class="info-box">အိပ်ရာဝင်ချိန်: <b>' + fmtTimeMm(plan.sleep.bed) +
 '</b> · နိုးထချိန်: <b>' + fmtTimeMm(plan.sleep.wake) + '</b> (၇.၅ နာရီ)</div>';
