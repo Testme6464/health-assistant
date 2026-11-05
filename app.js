@@ -42,7 +42,7 @@ function fmtTimeMm(hm) { // 24h -> Burmese 12h label
 
 // ---------------- store (localStorage, versioned) ----------------
 const STORE_KEY = 'healthAppV1';
-const APP_VERSION = '2026-11-05k'; // bump on every deploy; shown in Settings
+const APP_VERSION = '2026-11-05l'; // bump on every deploy; shown in Settings
 function defaultDB() {
   const p1 = uid();
   return {
@@ -114,16 +114,16 @@ function closeModal() { $('modalOverlay').classList.add('hidden'); }
 // ---------------- navigation ----------------
 const TABS = [
   { id: 'home',      ico: '🏠', label: 'ပင်မ' },
+  { id: 'food',      ico: '🍚', label: 'အစားအသောက်' },
+  { id: 'progress',  ico: '📊', label: 'တိုးတက်မှု' },
   { id: 'meds',      ico: '💊', label: 'ဆေးဝါးများ' },
   { id: 'plan',      ico: '🗓️', label: 'အစီအစဉ်' },
-  { id: 'food',      ico: '🍚', label: 'အစားအသောက်' },
-  { id: 'remind',    ico: '⏰', label: 'သတိပေးချက်များ' },
-  { id: 'progress',  ico: '📊', label: 'တိုးတက်မှု' },
-  { id: 'symptom',   ico: '📝', label: 'လက္ခဏာ' },
-  { id: 'emergency', ico: '🚨', label: 'အရေးပေါ်' },
   { id: 'period',    ico: '🩸', label: 'ရာသီစက်ဝန်း�' },
+  { id: 'symptom',   ico: '📝', label: 'လက္ခဏာ' },
+  { id: 'remind',    ico: '⏰', label: 'သတိပေးချက်များ' },
   { id: 'profile',   ico: '👤', label: 'ကျန်းမာရေးဖိုင်' },
   { id: 'report',    ico: '🖨️', label: 'အစီရင်ခံစာ' },
+  { id: 'emergency', ico: '🚨', label: 'အရေးပေါ်' },
   { id: 'settings',  ico: '⚙️', label: 'ဆက်တင်' },
 ];
 let currentTab = 'home';
