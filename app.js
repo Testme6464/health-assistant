@@ -42,7 +42,7 @@ function fmtTimeMm(hm) { // 24h -> Burmese 12h label
 
 // ---------------- store (localStorage, versioned) ----------------
 const STORE_KEY = 'healthAppV1';
-const APP_VERSION = '2026-11-05l'; // bump on every deploy; shown in Settings
+const APP_VERSION = '2026-11-05m'; // bump on every deploy; shown in Settings
 function defaultDB() {
   const p1 = uid();
   return {
@@ -661,6 +661,20 @@ function renderProfile() {
   html += '<h4>ဓာတ်မတည့်မှုများ (Allergies)</h4><div id="pfAllergy">' +
     p.allergies.map((c, i) => tagHtml('alg', i, c)).join('') + '</div>' +
     '<div class="row"><input id="pfAlgInput" class="grow" placeholder="ဥပမာ ပုစွန်၊ penicillin"><button class="btn small-btn" id="pfAlgAdd">ထည့်မယ်</button></div>';
+
+  // AUTO-SYNC 2026-11-05: လက္ခဏာ မှတ်တမ်းကို ကျန်းမာရေးဖိုင်ထဲ auto ပြ (ဖတ်ရန်သာ — လက္ခဏာ tab ကနေ ပြင်/ဖျက်)
+  const recentSym = DB.symptoms.filter(s => s.profileId === p.id)
+    .sort((a, b) => (a.date + a.time) < (b.date + b.time) ? 1 : -1).slice(0, 10);
+  html += '<h4>📝 လက္ခဏာ မှတ်တမ်း (auto)</h4>';
+  if (!recentSym.length) html += '<div class="muted">လက္ခဏာ မှတ်တမ်း မရှိသေးပါ — လက္ခဏာ tab မှာ မှတ်ပါ</div>';
+  else {
+    html += '<div class="info-box small">လက္ခဏာ tab မှာ မှတ်လိုက်တာနဲ့ ဒီမှာ auto ပေါ်ပါတယ်</div>';
+    recentSym.forEach(s => {
+      html += '<div class="list-item"><div class="grow"><b>' + esc(s.name) + '</b> ' +
+        '<span class="tag">အဆင့် ' + s.severity + '</span>' +
+        '<div class="small muted">' + fmtDateMm(s.date) + ' ' + fmtTimeMm(s.time) + (s.note ? ' · ' + esc(s.note) : '') + '</div></div></div>';
+    });
+  }
 
   html += '<div class="mt"><button class="btn block" id="pfSave">💾 သိမ်းဆည်းမယ်</button></div></div>';
 
