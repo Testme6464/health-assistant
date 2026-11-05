@@ -42,7 +42,7 @@ function fmtTimeMm(hm) { // 24h -> Burmese 12h label
 
 // ---------------- store (localStorage, versioned) ----------------
 const STORE_KEY = 'healthAppV1';
-const APP_VERSION = '2026-11-05w'; // bump on every deploy; shown in Settings
+const APP_VERSION = '2026-11-05x'; // bump on every deploy; shown in Settings
 function defaultDB() {
   const p1 = uid();
   return {
@@ -58,7 +58,7 @@ function defaultDB() {
     foodLog: [],         // {id,profileId,date,time,name,kcal,amount,source}
     waterLog: {},        // date -> ml
     sleepLog: [],        // {id,profileId,date,bedtime,wakeTime,quality,nightmare}
-    activityLog: [],     // {id,profileId,date,steps,minutes}
+    activityLog: [],     // {id,profileId,date,steps,minutes,exerciseType,stepsKcal,exKcal,kcal,source} — Health Connect-ready (see activityKcal)
     weightLog: [],       // {id,profileId,date,weight,waist}
     symptoms: [],        // {id,profileId,date,time,name,severity,note}
     emergencyContacts: [], // {id,name,phone,relation}
@@ -569,8 +569,9 @@ function renderHome() {
   html += '</div>';
 
   // activity
+  const actKcal = act ? activityKcal(act, parseFloat(p.weight) || 60).total : 0;
   html += '<div class="card"><h3>🚶 လှုပ်ရှားမှု</h3>' +
-    '<div class="row space-between"><div>ဒီနေ့ ခြေလှမ်း: <b>' + stepsToday + '</b></div>' +
+    '<div class="row space-between"><div>ဒီနေ့ ခြေလှမ်း: <b>' + stepsToday + '</b> · လောင်ကျွမ်း: <b>~' + actKcal + ' kcal</b></div>' +
     '<button class="btn small-btn secondary" id="btnQuickSteps">ခြေလှမ်းထည့်ရန်</button></div></div>';
 
   // weight mini chart
@@ -639,15 +640,35 @@ function addWater(ml) {
 function openStepsModal() {
   const p = activeProfile(), t = todayStr();
   const ex = DB.activityLog.find(a => a.profileId === p.id && a.date === t);
-  openModal('🚶 ဒီနေ့ လှုပ်ရှားမှု', 
+  const w = parseFloat(p.weight) || 60;
+  openModal('🚶 ဒီနေ့ လှုပ်ရှားမှု',
     '<label>ခြေလှမ်း အရေအတွက်</label><input id="mSteps" type="number" inputmode="numeric" value="' + (ex ? ex.steps : '') + '" placeholder="ဥပမာ 5000">' +
+    '<label>လေ့ကျင့်ခန်း အမျိုးအစား</label><select id="mExType">' +
+    EXERCISE_BURN.map((e, i) => '<option value="' + i + '"' + (ex && ex.exerciseType === i ? ' selected' : '') + '>' + esc(e.name) + '</option>').join('') + '</select>' +
     '<label>လေ့ကျင့်ခန်း (မိနစ်)</label><input id="mMins" type="number" inputmode="numeric" value="' + (ex ? (ex.minutes || '') : '') + '" placeholder="ဥပမာ 30">' +
+    '<div class="info-box mt" id="mKcalPrev"></div>' +
+    '<div class="muted small mt">📱 APK မှာ Health Connect နဲ့ ချိတ်ရင် ခြေလှမ်းနဲ့ လေ့ကျင့်ခန်း အလိုလို ရောက်လာမယ်</div>' +
     '<div class="mt"><button class="btn block" id="mSaveSteps">သိမ်းမယ်</button></div>');
+  const upd = () => {
+    const steps = parseInt($('mSteps').value || '0', 10) || 0;
+    const type = parseInt($('mExType').value, 10);
+    const e = EXERCISE_BURN[type] || EXERCISE_BURN[1];
+    const min = parseInt($('mMins').value || '0', 10) || 0;
+    const k = activityKcal({ steps: steps, exerciseType: type, minutes: min }, w);
+    $('mKcalPrev').innerHTML = '🔥 လောင်ကျွမ်းမည့် ကယ်လိုရီ (ခန့်မှန်း): <b>~' + k.total + ' kcal</b> <span class="muted">(ခြေလှမ်း ~' + k.stepsKcal + ' + ' + esc(e.name) + ' ~' + k.exKcal + ')</span>';
+  };
+  ['mSteps', 'mMins'].forEach(id => $(id).addEventListener('input', upd));
+  $('mExType').addEventListener('change', upd);
+  upd();
   $('mSaveSteps').addEventListener('click', () => {
     const steps = parseInt($('mSteps').value || '0', 10) || 0;
     const minutes = parseInt($('mMins').value || '0', 10) || 0;
-    if (ex) { ex.steps = steps; ex.minutes = minutes; }
-    else DB.activityLog.push({ id: uid(), profileId: p.id, date: t, steps: steps, minutes: minutes });
+    const exerciseType = parseInt($('mExType').value, 10);
+    const k = activityKcal({ steps: steps, exerciseType: exerciseType, minutes: minutes }, w);
+    const rec = { steps: steps, minutes: minutes, exerciseType: isNaN(exerciseType) ? 1 : exerciseType,
+      stepsKcal: k.stepsKcal, exKcal: k.exKcal, kcal: k.total, source: 'manual' };
+    if (ex) Object.assign(ex, rec);
+    else DB.activityLog.push(Object.assign({ id: uid(), profileId: p.id, date: t }, rec));
     saveDB(); closeModal(); renderHome(); toast('မှတ်တမ်းတင်ပြီးပါပြီ ✅');
   });
 }
@@ -1269,6 +1290,35 @@ function burnMinutes(met, weightKg, kcal) {
   return Math.max(1, Math.round(kcal / (met * weightKg / 60)));
 }
 
+// ---- activity → calories + Health Connect-ready model (2026-11-05) ----
+// Calories burned from an activity record: steps + exercise minutes (MET-based).
+// Old records without kcal fields are computed on the fly the same way.
+function activityKcal(a, weightKg) {
+  const w = weightKg || 60;
+  const stepsKcal = Math.round((a.steps || 0) * 0.04 * (w / 70));
+  const e = EXERCISE_BURN[a.exerciseType] || EXERCISE_BURN[1];
+  const exKcal = burnKcal(e.met, w, a.minutes || 0);
+  return { stepsKcal: stepsKcal, exKcal: exKcal, total: stepsKcal + exKcal };
+}
+// Health Connect (APK phase) mapping — keep these field names stable:
+//   steps         → StepsRecord.count
+//   exerciseType  → ExerciseSessionRecord.exerciseType (HC_EXERCISE_TYPE below)
+//   minutes       → ExerciseSessionRecord duration
+//   kcal          → ActiveCaloriesBurnedRecord.energy (kcal)
+//   source        → 'manual' now; 'health-connect' when synced from the phone later
+const HC_EXERCISE_TYPE = ['walking', 'walking', 'walking', 'running', 'biking', 'swimming', 'strength', 'stretching', 'yoga', 'other'];
+// Shape an activity record for Health Connect sync (used by the APK phase later).
+function activityToHealthConnect(a) {
+  return {
+    steps: { count: a.steps || 0, source: a.source || 'manual' },
+    exerciseSession: {
+      exerciseType: HC_EXERCISE_TYPE[a.exerciseType] || 'walking',
+      durationMinutes: a.minutes || 0,
+    },
+    activeCaloriesBurned: { kcal: a.kcal != null ? a.kcal : activityKcal(a, 60).total },
+  };
+}
+
 // ============================================================
 // VIEW: 🍚 အစားအသောက် (Food Log)
 // ============================================================
@@ -1561,8 +1611,9 @@ function renderRemind() {
   html += '</div>';
 
   const act = DB.activityLog.find(a => a.profileId === p.id && a.date === t);
+  const actKcal = act ? activityKcal(act, parseFloat(p.weight) || 60).total : 0;
   html += '<div class="card"><h3>🚶 ဒီနေ့ လှုပ်ရှားမှု</h3>' +
-    '<div class="row space-between"><div>ခြေလှမ်း: <b>' + (act ? act.steps : 0) + '</b> · မိနစ်: <b>' + (act ? (act.minutes || 0) : 0) + '</b></div>' +
+    '<div class="row space-between"><div>ခြေလှမ်း: <b>' + (act ? act.steps : 0) + '</b> · မိနစ်: <b>' + (act ? (act.minutes || 0) : 0) + '</b> · လောင်ကျွမ်း: <b>~' + actKcal + ' kcal</b></div>' +
     '<button class="btn small-btn secondary" id="btnEditAct">ပြင်/ထည့်မယ်</button></div></div>';
 
   $('view-remind').innerHTML = html;
@@ -2049,7 +2100,7 @@ function renderSettings() {
     '<div class="small muted mt">မှတ်တမ်းအားလုံးကို ဖိုင်အဖြစ် သိမ်းနိုင် / ပြန်ထည့်နိုင်ပါတယ်</div></div>';
 
   html += '<div class="card"><h3>🔗 ချိတ်ဆက်မှုများ</h3>' +
-    '<div class="list-item" style="opacity:.55"><div class="grow"><b>❤️ Health Connect</b><div class="small muted">ခြေလှမ်း/အိပ်ချိန် အလိုအလျောက်ဆွဲယူခြင်း</div></div>' +
+    '<div class="list-item" style="opacity:.55"><div class="grow"><b>❤️ Health Connect</b><div class="small muted">ခြေလှမ်း / လေ့ကျင့်ခန်း / လောင်ကျွမ်းတဲ့ ကယ်လိုရီ အလိုအလျောက်ဆွဲယူခြင်း</div></div>' +
     '<span class="tag">APK version မှာ ရမယ်</span></div></div>';
 
   html += '<div class="card"><h3>🔒 Privacy</h3>' +
