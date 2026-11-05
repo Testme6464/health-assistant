@@ -42,7 +42,7 @@ function fmtTimeMm(hm) { // 24h -> Burmese 12h label
 
 // ---------------- store (localStorage, versioned) ----------------
 const STORE_KEY = 'healthAppV1';
-const APP_VERSION = '2026-11-05v'; // bump on every deploy; shown in Settings
+const APP_VERSION = '2026-11-05w'; // bump on every deploy; shown in Settings
 function defaultDB() {
   const p1 = uid();
   return {
@@ -1248,6 +1248,27 @@ h += todayGuide(plan, showAlt);
 return h;
 }
 
+// ---- exercise calorie burn (MET-based) ----
+// kcal = MET × weight(kg) × minutes/60
+const EXERCISE_BURN = [
+  { name: 'လမ်းလျှောက် (ဖြေးဖြေး)', met: 2.8 },
+  { name: 'လမ်းလျှောက်', met: 3.5 },
+  { name: 'လမ်းမြန်မြန်လျှောက်', met: 4.3 },
+  { name: 'ပြေး', met: 9.8 },
+  { name: 'စက်ဘီးစီး', met: 7.5 },
+  { name: 'ရေကူး', met: 6.0 },
+  { name: 'ကြွက်သားလေ့ကျင့်ခန်း', met: 5.0 },
+  { name: 'အကြောဆန့်', met: 2.3 },
+  { name: 'ယောဂ', met: 2.5 },
+  { name: 'အိမ်အလုပ် (သန့်ရှင်းရေး)', met: 3.0 },
+];
+function burnKcal(met, weightKg, minutes) {
+  return Math.round(met * weightKg * minutes / 60);
+}
+function burnMinutes(met, weightKg, kcal) {
+  return Math.max(1, Math.round(kcal / (met * weightKg / 60)));
+}
+
 // ============================================================
 // VIEW: 🍚 အစားအသောက် (Food Log)
 // ============================================================
@@ -1267,6 +1288,25 @@ function renderFood() {
   let html = '<div class="card"><h3>🍚 ဒီနေ့ စားသုံးမှု</h3>' +
     '<div class="row space-between"><b>' + kcalToday + ' kcal</b><span class="muted">ရည်မှန်း ' + kcalTarget + ' kcal</span></div>' +
     '<div class="progress' + (kcalToday > kcalTarget ? ' over' : '') + '"><div style="width:' + pct + '%"></div></div></div>';
+
+  // Over-target warning (2026-11-05): exercise + eat less for the rest of the day
+  if (kcalToday > kcalTarget) {
+    const over = kcalToday - kcalTarget;
+    const w = parseFloat(p.weight) || 60;
+    html += '<div class="alert">⚠️ <b>ဒီနေ့ ရည်မှန်းချက် ကျော်နေပါပြီ — ' + over + ' kcal ပိုစားထားပါတယ်။</b><br>' +
+      'ကျန်တဲ့အချိန်မှာ အစာလျှော့စားပြီး လေ့ကျင့်ခန်းလုပ်ပါ။<br>' +
+      '🔥 ပိုနေတဲ့ ကယ်လိုရီ လောင်ကျွမ်းဖို့: လမ်းလျှောက် ~' + burnMinutes(3.5, w, over) + ' မိနစ် (သို့) လမ်းမြန်မြန်လျှောက် ~' + burnMinutes(4.3, w, over) + ' မိနစ် (သို့) ပြေး ~' + burnMinutes(9.8, w, over) + ' မိနစ်</div>';
+  } else if (kcalToday >= kcalTarget * 0.9) {
+    html += '<div class="warn-box">⚠️ ရည်မှန်းချက် နီးနေပါပြီ — ' + (kcalTarget - kcalToday) + ' kcal ပဲ ကျန်ပါတယ်။ ကျန်တဲ့အချိန်မှာ အစာကို သတိထားစားပါ။</div>';
+  }
+
+  // Exercise calorie burn calculator
+  html += '<div class="card"><h3>🔥 လေ့ကျင့်ခန်း ကယ်လိုရီ တွက်စက်</h3>' +
+    '<div class="muted small">ကိုယ်အလေးချိန် ' + (parseFloat(p.weight) || 60) + ' kg အတွက် တွက်ထားတာပါ</div>' +
+    '<label>လေ့ကျင့်ခန်း</label><select id="exSel">' +
+    EXERCISE_BURN.map((e, i) => '<option value="' + i + '">' + esc(e.name) + '</option>').join('') + '</select>' +
+    '<label>မိနစ်</label><input id="exMin" type="number" inputmode="numeric" value="30" min="1" style="width:auto">' +
+    '<div class="info-box mt" id="exResult"></div></div>';
 
   html += '<div class="card"><h3>➕ မှတ်တမ်းထည့်ရန်</h3>' +
     '<div class="row wrap mb">' +
@@ -1313,6 +1353,16 @@ function renderFood() {
   html += '</div>';
 
   $('view-food').innerHTML = html;
+
+  // exercise burn calculator
+  const updEx = () => {
+    const e = EXERCISE_BURN[parseInt($('exSel').value, 10)] || EXERCISE_BURN[1];
+    const min = Math.max(1, parseInt($('exMin').value, 10) || 30);
+    $('exResult').innerHTML = '🔥 <b>' + esc(e.name) + ' ' + min + ' မိနစ်</b> လုပ်ရင် လောင်ကျွမ်းမည့် ကယ်လိုရီ: <b>~' + burnKcal(e.met, parseFloat(p.weight) || 60, min) + ' kcal</b>';
+  };
+  $('exSel').addEventListener('change', updEx);
+  $('exMin').addEventListener('input', updEx);
+  updEx();
 
   $('tabFoodText').addEventListener('click', () => {
     $('foodTextPane').style.display = ''; $('foodPhotoPane').style.display = 'none';
