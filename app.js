@@ -42,7 +42,7 @@ function fmtTimeMm(hm) { // 24h -> Burmese 12h label
 
 // ---------------- store (localStorage, versioned) ----------------
 const STORE_KEY = 'healthAppV1';
-const APP_VERSION = '2026-11-05h'; // bump on every deploy; shown in Settings
+const APP_VERSION = '2026-11-05i'; // bump on every deploy; shown in Settings
 function defaultDB() {
   const p1 = uid();
   return {
@@ -533,7 +533,6 @@ function renderHome() {
     '<div class="water-btns"><button class="btn" data-water="250">+ 250 ml</button>' +
     '<button class="btn" data-water="500">+ 500 ml</button></div></div></div>';
   html += '</div>';
-  html += coachingMsg(p, kcalToday, kcalTarget);
 
   // meds
   html += '<div class="card"><h3>💊 ဒီနေ့ ဆေး</h3>';
@@ -587,15 +586,6 @@ function renderHome() {
     label: 'kg', color: '#1f6fb2',
     points: wl.map(w => ({ x: w.date.slice(5), y: +w.weight }))
   }], { unit: 'kg' });
-}
-function coachingMsg(p, kcalToday, kcalTarget) {
-  if (kcalToday > kcalTarget * 1.1)
-    return '<div class="warn-box">⚠️ ဒီနေ့ ကယ်လိုရီ များသွားပါတယ်။ ညနေမှာ လမ်း <b>မိနစ် ၂၀</b> ပိုလျှောက်ပါ 🚶</div>';
-  if (kcalToday > kcalTarget)
-    return '<div class="warn-box">ကယ်လိုရီ ရည်မှန်းချက်ကို ကျော်သွားပါပြီ — ညစာကို ပေါ့ပေါ့စားပါ။</div>';
-  if (kcalToday < kcalTarget * 0.5 && new Date().getHours() >= 15)
-    return '<div class="info-box">ဒီနေ့ အစာ နည်းနေပါတယ် — အာဟာရပြည့်အောင် ညစာကို သေချာစားပါ။</div>';
-  return '<div class="ok-box">✅ ကယ်လိုရီ လမ်းကြောင်းမှန်ပေါ်မှာ ရှိပါတယ် — ဆက်ထိန်းထားပါ!</div>';
 }
 function todaysMedSchedule(profileId, dateStr) {
   const out = [];
@@ -1075,8 +1065,7 @@ function renderFood() {
 
   let html = '<div class="card"><h3>🍚 ဒီနေ့ စားသုံးမှု</h3>' +
     '<div class="row space-between"><b>' + kcalToday + ' kcal</b><span class="muted">ရည်မှန်း ' + kcalTarget + ' kcal</span></div>' +
-    '<div class="progress' + (kcalToday > kcalTarget ? ' over' : '') + '"><div style="width:' + pct + '%"></div></div>' +
-    coachingMsg(p, kcalToday, kcalTarget) + '</div>';
+    '<div class="progress' + (kcalToday > kcalTarget ? ' over' : '') + '"><div style="width:' + pct + '%"></div></div></div>';
 
   html += '<div class="card"><h3>➕ မှတ်တမ်းထည့်ရန်</h3>' +
     '<div class="row wrap mb">' +
