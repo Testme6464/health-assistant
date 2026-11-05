@@ -42,7 +42,7 @@ function fmtTimeMm(hm) { // 24h -> Burmese 12h label
 
 // ---------------- store (localStorage, versioned) ----------------
 const STORE_KEY = 'healthAppV1';
-const APP_VERSION = '2026-11-05p'; // bump on every deploy; shown in Settings
+const APP_VERSION = '2026-11-05q'; // bump on every deploy; shown in Settings
 function defaultDB() {
   const p1 = uid();
   return {
@@ -400,25 +400,49 @@ function switchProfile(id) {
   showTab(currentTab);
 }
 
-// ---------------- rule-based daily coach tips ----------------
-const COACH_TIPS = [
-  'ရေကို တစ်နေ့ အနည်းဆုံး ၈ ခွက် (၂ လီတာ) သောက်ပါ။',
-  'ထမင်းစားပြီးတိုင်း ၁၀ မိနစ်လောက် လမ်းလျှောက်ပေးပါ။',
-  'ည ၁၀ နာရီခွဲမတိုင်မီ အိပ်ရာဝင်ဖို့ ကြိုးစားပါ။',
-  'အချိုရည်အစား ရေသန့် (သို့) သံပုရာရည် သောက်ပါ။',
-  'ဆေးကို အချိန်မှန်သောက်ဖို့ သတိပေးချက်ဖွင့်ထားပါ။',
-  'ဟင်းသီးဟင်းရွက် များများစားပါ — ထမင်းတစ်ပန်းကန်ရဲ့ ထက်ဝက်က အရွက်ဖြစ်ပါစေ။',
-  'တစ်နေ့ မိနစ် ၃၀ လမ်းလျှောက်ခြင်းက နှလုံးကျန်းမာရေးအတွက် အကောင်းဆုံးပါ။',
-  'အိပ်ရာမဝင်မီ ၁ နာရီအလိုမှာ ဖုန်းကို ချထားပါ။',
-  'အစာကို ဖြည်းဖြည်းချင်း ဝါးစားပါ — ဗိုက်ပြည့်တယ်လို့ ဦးနှောက်က သိဖို့ မိနစ် ၂၀ လိုပါတယ်။',
-  'ဆားလျှော့စားပါ — ငံပြာရည်၊ ငါးပိရည်ကို အနည်းငယ်သာ သုံးပါ။',
-  'မနက်စာကို ဘယ်တော့မှ မလွတ်ပါနဲ့။',
-  'စိတ်ဖိစီးမှုများရင် အသက်ကို နက်နက်ရှုပြီး ၅ မိနစ် အနားယူပါ။',
-];
+// ---------------- rule-based daily coach tips (time-aware) ----------------
+// Each tip only shows at a fitting time of day — no bedtime tips at noon.
+function timeOfDayMm(h) {
+  if (h < 5) return 'ညနက်ပိုင်း';
+  if (h < 11) return 'မနက်ပိုင်း';
+  if (h < 17) return 'နေ့လည်ပိုင်း';
+  if (h < 22) return 'ညနေပိုင်း';
+  return 'ညပိုင်း';
+}
+const COACH_TIPS = {
+  morning: [
+    'မနက်စာကို ဘယ်တော့မှ မလွတ်ပါနဲ့။',
+    'ရေကို တစ်နေ့ အနည်းဆုံး ၈ ခွက် (၂ လီတာ) သောက်ပါ။',
+    'တစ်နေ့ မိနစ် ၃၀ လမ်းလျှောက်ခြင်းက နှလုံးကျန်းမာရေးအတွက် အကောင်းဆုံးပါ။',
+    'ဆေးကို အချိန်မှန်သောက်ဖို့ သတိပေးချက်ဖွင့်ထားပါ။',
+  ],
+  day: [
+    'ထမင်းစားပြီးတိုင်း ၁၀ မိနစ်လောက် လမ်းလျှောက်ပေးပါ။',
+    'အချိုရည်အစား ရေသန့် (သို့) သံပုရာရည် သောက်ပါ။',
+    'ဟင်းသီးဟင်းရွက် များများစားပါ — ထမင်းတစ်ပန်းကန်ရဲ့ ထက်ဝက်က အရွက်ဖြစ်ပါစေ။',
+    'အစာကို ဖြည်းဖြည်းချင်း ဝါးစားပါ — ဗိုက်ပြည့်တယ်လို့ ဦးနှောက်က သိဖို့ မိနစ် ၂၀ လိုပါတယ်။',
+    'ဆားလျှော့စားပါ — ငံပြာရည်၊ ငါးပိရည်ကို အနည်းငယ်သာ သုံးပါ။',
+    'စိတ်ဖိစီးမှုများရင် အသက်ကို နက်နက်ရှုပြီး ၅ မိနစ် အနားယူပါ။',
+    'ရေကို တစ်နေ့ အနည်းဆုံး ၈ ခွက် (၂ လီတာ) သောက်ပါ။',
+  ],
+  evening: [
+    'ထမင်းစားပြီးတိုင်း ၁၀ မိနစ်လောက် လမ်းလျှောက်ပေးပါ။',
+    'အချိုရည်အစား ရေသန့် (သို့) သံပုရာရည် သောက်ပါ။',
+    'စိတ်ဖိစီးမှုများရင် အသက်ကို နက်နက်ရှုပြီး ၅ မိနစ် အနားယူပါ။',
+    'ဆေးကို အချိန်မှန်သောက်ဖို့ သတိပေးချက်ဖွင့်ထားပါ။',
+  ],
+  night: [
+    'ည ၁၀ နာရီခွဲမတိုင်မီ အိပ်ရာဝင်ဖို့ ကြိုးစားပါ။',
+    'အိပ်ရာမဝင်မီ ၁ နာရီအလိုမှာ ဖုန်းကို ချထားပါ။',
+  ],
+};
 function tipOfDay() {
   const d = new Date();
-  const idx = (d.getFullYear() * 372 + (d.getMonth() + 1) * 31 + d.getDate()) % COACH_TIPS.length;
-  return COACH_TIPS[idx];
+  const h = d.getHours();
+  const bucket = h < 5 ? 'night' : h < 11 ? 'morning' : h < 17 ? 'day' : h < 22 ? 'evening' : 'night';
+  const list = COACH_TIPS[bucket];
+  const idx = (d.getFullYear() * 372 + (d.getMonth() + 1) * 31 + d.getDate()) % list.length;
+  return list[idx];
 }
 
 // ---------------- hand-rolled canvas line chart ----------------
@@ -570,13 +594,16 @@ function renderHome() {
     aiBtn.disabled = true; aiBtn.textContent = 'စဉ်းစားနေသည်…';
     try {
       const p2 = activeProfile();
+      const now = new Date();
       const tip = await aiChat(
         'You are a friendly Burmese health coach. Reply in Burmese (Myanmar script), 2-3 short sentences, practical and encouraging. No medical diagnosis.',
         'Profile: age ' + (p2.age || '?') + ', gender ' + (p2.gender || '?') + ', BMI ' +
         ((calcBMI(p2) || 0).toFixed(1)) + ', goal ' + (GOAL_LABEL[p2.goal] || '') +
         ', conditions: ' + (p2.conditions.join(', ') || 'none') +
         '. Today: ' + kcalToday + '/' + kcalTarget + ' kcal, water ' + waterToday + 'ml, steps ' + stepsToday +
-        '. Give one personalized health tip for the rest of today.',
+        '. Current local time is ' + nowHM() + ' (' + timeOfDayMm(now.getHours()) + '). ' +
+        'Give one personalized health tip that fits THIS time of day and the rest of today. ' +
+        'Never suggest bedtime or night routines during daytime, and never suggest morning routines in the evening or at night.',
         (n, total, note) => { aiBtn.textContent = note === 'wait' ? 'ခဏစောင့်နေသည်…' : ('ပြန်ကြိုးစားနေသည်… (' + n + '/' + total + ')'); });
       $('coachTipBox').textContent = tip;
     } catch (e) { toast('AI ခေါ်ဆို၍မရပါ: ' + e.message); }
