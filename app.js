@@ -42,7 +42,7 @@ function fmtTimeMm(hm) { // 24h -> Burmese 12h label
 
 // ---------------- store (localStorage, versioned) ----------------
 const STORE_KEY = 'healthAppV1';
-const APP_VERSION = '2026-11-05o'; // bump on every deploy; shown in Settings
+const APP_VERSION = '2026-11-05p'; // bump on every deploy; shown in Settings
 function defaultDB() {
   const p1 = uid();
   return {
@@ -676,6 +676,16 @@ function renderProfile() {
         '<div class="small muted">' + fmtDateMm(s.date) + ' ' + fmtTimeMm(s.time) + (s.note ? ' · ' + esc(s.note) : '') + '</div></div></div>';
     });
   }
+
+  // AUTO-SYNC 2026-11-05: ရာသီစက်ဝန်း အကျဉ်းချုပ် (auto) — ရာသီစက်ဝန်း tab ကနေ ပြင်/ဖျက်
+  const ps = calcPeriodSummary(p.id);
+  html += '<h4>🩸 ရာသီစက်ဝန်း အကျဉ်းချုပ် (auto)</h4>';
+  if (!ps.count) html += '<div class="muted">ရာသီစက်ဝန်း မှတ်တမ်း မရှိသေးပါ — ရာသီစက်ဝန်း tab မှာ မှတ်ပါ</div>';
+  else if (ps.count < 2) html += '<div class="info-box">နောက်ဆုံး ရာသီ: <b>' + fmtDateMm(ps.last) + '</b><br><span class="muted">ခန့်မှန်းဖို့ မှတ်တမ်း အနည်းဆုံး ၂ ခု လိုပါတယ်</span></div>';
+  else html += '<div class="info-box">📅 ပျမ်းမျှ စက်ဝန်း: <b>' + ps.avg + ' ရက်</b> · မှတ်တမ်း ' + ps.count + ' ခု<br>' +
+    'နောက်ဆုံး ရာသီ: <b>' + fmtDateMm(ps.last) + '</b><br>' +
+    'နောက်တစ်ကြိမ် ခန့်မှန်း: <b>' + fmtDateMm(ps.next) + '</b>' +
+    (ps.daysLeft >= 0 ? ' (' + ps.daysLeft + ' ရက် အလို)' : ' (' + (-ps.daysLeft) + ' ရက် ကျော်လွန်)') + '</div>';
 
   html += '<div class="mt"><button class="btn block" id="pfSave">💾 သိမ်းဆည်းမယ်</button></div></div>';
 
@@ -1649,6 +1659,23 @@ function renderEmergency() {
 // ============================================================
 // VIEW: 🩸 ရာသီစက်ဝန်း� (Period Tracker)
 // ============================================================
+// Period cycle summary — shared by Period tab and Profile tab (auto sections)
+function calcPeriodSummary(profileId) {
+  const logs = DB.periodLog.filter(x => x.profileId === profileId).sort((a, b) => a.start < b.start ? -1 : 1);
+  if (!logs.length) return { count: 0, logs: logs };
+  const last = logs[logs.length - 1].start;
+  if (logs.length < 2) return { count: logs.length, last: last, logs: logs };
+  const diffs = [];
+  for (let i = 0; i < Math.min(3, logs.length - 1); i++) {
+    // diff = newer - older (logs sorted oldest-first); predict from MOST RECENT entry
+    diffs.push(Math.round((new Date(logs[i + 1].start) - new Date(logs[i].start)) / 86400000));
+  }
+  const avg = Math.round(diffs.reduce((a, b) => a + b, 0) / diffs.length);
+  const next = addDays(last, avg);
+  const daysLeft = Math.round((new Date(next + 'T12:00:00') - new Date(todayStr() + 'T12:00:00')) / 86400000);
+  return { count: logs.length, last: last, avg: avg, next: next, daysLeft: daysLeft, logs: logs };
+}
+
 function renderPeriod() {
   const p = activeProfile();
   if (!p.periodEnabled) {
@@ -1660,21 +1687,13 @@ function renderPeriod() {
     });
     return;
   }
-  const logs = DB.periodLog.filter(x => x.profileId === p.id).sort((a, b) => a.start < b.start ? -1 : 1);
+  const sum = calcPeriodSummary(p.id);
+  const logs = sum.logs;
   let predHtml = '<div class="muted">ခန့်မှန်းဖို့ မှတ်တမ်း အနည်းဆုံး ၂ ခု လိုပါတယ်</div>';
-  if (logs.length >= 2) {
-    const diffs = [];
-    for (let i = 0; i < Math.min(3, logs.length - 1); i++) {
-      // FIX 2026-11-05: diff direction was inverted (gave -30). logs sorted oldest-first,
-      // so diff = newer - older; predict from the MOST RECENT entry, not the oldest.
-      diffs.push(Math.round((new Date(logs[i + 1].start) - new Date(logs[i].start)) / 86400000));
-    }
-    const avg = Math.round(diffs.reduce((a, b) => a + b, 0) / diffs.length);
-    const next = addDays(logs[logs.length - 1].start, avg);
-    const daysLeft = Math.round((new Date(next + 'T12:00:00') - new Date(todayStr() + 'T12:00:00')) / 86400000);
-    predHtml = '<div class="info-box">📅 ပျမ်းမျှ စက်ဝန်း: <b>' + avg + ' ရက်</b><br>' +
-      'နောက်တစ်ကြိမ် ခန့်မှန်း: <b>' + fmtDateMm(next) + '</b>' +
-      (daysLeft >= 0 ? ' (' + daysLeft + ' ရက် အလို)' : ' (' + (-daysLeft) + ' ရက် ကျော်လွန်)') + '</div>';
+  if (sum.count >= 2) {
+    predHtml = '<div class="info-box">📅 ပျမ်းမျှ စက်ဝန်း: <b>' + sum.avg + ' ရက်</b><br>' +
+      'နောက်တစ်ကြိမ် ခန့်မှန်း: <b>' + fmtDateMm(sum.next) + '</b>' +
+      (sum.daysLeft >= 0 ? ' (' + sum.daysLeft + ' ရက် အလို)' : ' (' + (-sum.daysLeft) + ' ရက် ကျော်လွန်)') + '</div>';
   }
   let html = '<div class="card"><div class="row space-between"><h3>🩸 ရာသီစက်ဝန်း� မှတ်တမ်း</h3>' +
     '<button class="btn small-btn" id="btnAddPeriod">＋ ထည့်မယ်</button></div>' + predHtml;
