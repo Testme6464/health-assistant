@@ -42,7 +42,7 @@ function fmtTimeMm(hm) { // 24h -> Burmese 12h label
 
 // ---------------- store (localStorage, versioned) ----------------
 const STORE_KEY = 'healthAppV1';
-const APP_VERSION = '2026-11-05g'; // bump on every deploy; shown in Settings
+const APP_VERSION = '2026-11-05h'; // bump on every deploy; shown in Settings
 function defaultDB() {
   const p1 = uid();
   return {
@@ -1139,7 +1139,10 @@ function renderFood() {
       const amt = parseFloat($('foodAmount').value) || 1;
       box.innerHTML = '<div class="ok-box">✅ <b>' + esc(hit.name) + '</b> — ' + hit.kcal + ' kcal / ' + esc(hit.unit) +
         ' → ပမာဏ ' + amt + ' = <b>' + Math.round(hit.kcal * amt) + ' kcal</b></div>';
-      if (!$('foodKcal').value) $('foodKcal').value = Math.round(hit.kcal * amt);
+      // FIX 2026-11-05: ကယ်လိုရီကို အမြဲပြန်တွက် (အရင်က အလွတ်ဖြစ်မှသာ ဖြည့်လို့
+      // အစားအစာပြောင်း/ပမာဏပြောင်းရင် အဟောင်းကျန်နေတာ)။ လက်နဲ့ပြင်ချင်ရင်
+      // အစားအစာ+ပမာဏ ရွေးပြီးမှ ပြင်ပါ — အဲ့ဒီတန်ဖိုးအတိုင်း သိမ်းမယ်။
+      $('foodKcal').value = Math.round(hit.kcal * amt);
       box.dataset.food = hit.name; box.dataset.baseKcal = hit.kcal;
     } else {
       box.innerHTML = q ? '<div class="warn-box">စာရင်းထဲမှာ မတွေ့ပါ — ကယ်လိုရီကို လက်နဲ့ထည့်ပေးပါ</div>' : '';
