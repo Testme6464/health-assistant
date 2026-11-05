@@ -42,7 +42,7 @@ function fmtTimeMm(hm) { // 24h -> Burmese 12h label
 
 // ---------------- store (localStorage, versioned) ----------------
 const STORE_KEY = 'healthAppV1';
-const APP_VERSION = '2026-11-05j'; // bump on every deploy; shown in Settings
+const APP_VERSION = '2026-11-05k'; // bump on every deploy; shown in Settings
 function defaultDB() {
   const p1 = uid();
   return {
@@ -1050,7 +1050,7 @@ return h;
 // ============================================================
 // VIEW: 🍚 အစားအသောက် (Food Log)
 // ============================================================
-let foodPhotoDataUrl = null;
+let foodPhotoDataUrls = [];
 function renderFood() {
   const p = activeProfile();
   const t = todayStr();
@@ -1087,16 +1087,16 @@ function renderFood() {
       '<div class="mt"><button class="btn block" id="btnAddFoodText">မှတ်တမ်းတင်မယ်</button></div>' +
     '</div>' +
     '<div id="foodPhotoPane" style="display:none">' +
-      '<label>အစားအစာ ပုံရိုက်ရန် / ရွေးရန်</label>' +
+      '<label>အစားအစာ ပုံရိုက်ရန် / ရွေးရန် (များများ ရွေးနိုင်ပါတယ်)</label>' +
       '<div class="row" style="gap:8px">' +
         '<button class="btn" id="btnFoodCamera" style="flex:1">📷 ရိုက်မယ်</button>' +
         '<button class="btn secondary" id="btnFoodGallery" style="flex:1">🖼️ ရွေးမယ်</button>' +
       '</div>' +
       '<input id="foodPhotoCam" type="file" accept="image/*" capture="environment" style="display:none">' +
-      '<input id="foodPhotoGal" type="file" accept="image/*" style="display:none">' +
+      '<input id="foodPhotoGal" type="file" accept="image/*" multiple style="display:none">' +
       '<div id="foodPhotoPrev" class="mt"></div><div id="foodAiResult" class="mt"></div>' +
       (geminiKeyList().length
-        ? '<div class="mt"><button class="btn block" id="btnAnalyzeFood">✨ AI နဲ့ ပုံကို ဆန်းစစ်မယ်</button></div>'
+        ? '<div class="mt"><button class="btn block" id="btnAnalyzeFood">✨ AI နဲ့ ပုံများကို ဆန်းစစ်မယ်</button></div>'
         : '<div class="info-box mt">📷 ပုံမှ AI ဆန်းစစ်ချက်ရဖို့ Settings မှာ <b>Gemini API key</b> ထည့်ထားရပါမယ်။ Key မရှိရင် ပုံကြည့်ပြီး အောက်က စာနဲ့ထည့်တဲ့နည်းနဲ့ မှတ်နိုင်ပါတယ်။</div>') +
     '</div></div>';
 
@@ -1178,45 +1178,75 @@ function renderFood() {
       DB.foodLog = DB.foodLog.filter(x => x.id !== b.dataset.delfood);
       saveDB(); renderFood();
     }));
-  // FIX 2026-11-05: capture="environment" က camera ပဲပေါ်စေလို့ နှစ်ခွဲထားတယ် —
-  // "ရိုက်မယ်" = camera တိုက်ရိုက်, "ရွေးမယ်" = gallery/storage ရွေးချယ်မှု
-  const handleFoodPhotoFile = (file) => {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      foodPhotoDataUrl = reader.result;
-      $('foodPhotoPrev').innerHTML = '<img src="' + foodPhotoDataUrl + '" style="max-width:100%;border-radius:12px" alt="အစားအစာပုံ">';
-      $('foodAiResult').innerHTML = '';
-    };
-    reader.readAsDataURL(file);
+  // MULTI-PHOTO 2026-11-05: ပုံများများ တစ်ခါတည်း ရွေး + AI တစ်ခါတည်း ဆန်းစစ်
+  const updateAnalyzeBtn = () => {
+    const btn = $('btnAnalyzeFood');
+    if (btn) btn.textContent = '✨ AI နဲ့ ပုံများကို ဆန်းစစ်မယ်' +
+      (foodPhotoDataUrls.length ? ' (' + foodPhotoDataUrls.length + ' ပုံ)' : '');
+  };
+  const renderFoodPhotoPrev = () => {
+    $('foodPhotoPrev').innerHTML = foodPhotoDataUrls.map((u, i) =>
+      '<span style="display:inline-block;position:relative;margin:0 6px 6px 0">' +
+      '<img src="' + u + '" style="width:84px;height:84px;object-fit:cover;border-radius:10px" alt="အစားအစာပုံ">' +
+      '<button class="icon-btn" data-delphoto="' + i + '" aria-label="ပုံဖျက်ရန်" style="position:absolute;top:-6px;right:-6px;background:#d64545;color:#fff;border-radius:50%;width:22px;height:22px;font-size:12px;line-height:1">✕</button></span>').join('');
+    $('foodPhotoPrev').querySelectorAll('[data-delphoto]').forEach(b =>
+      b.addEventListener('click', () => {
+        foodPhotoDataUrls.splice(+b.dataset.delphoto, 1);
+        renderFoodPhotoPrev();
+      }));
+    updateAnalyzeBtn();
+  };
+  const handleFoodPhotoFiles = (files) => {
+    const list = Array.from(files || []);
+    if (!list.length) return;
+    let loaded = 0;
+    list.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        foodPhotoDataUrls.push(reader.result);
+        loaded++;
+        if (loaded === list.length) { renderFoodPhotoPrev(); $('foodAiResult').innerHTML = ''; }
+      };
+      reader.readAsDataURL(file);
+    });
   };
   $('btnFoodCamera').addEventListener('click', () => $('foodPhotoCam').click());
   $('btnFoodGallery').addEventListener('click', () => $('foodPhotoGal').click());
-  $('foodPhotoCam').addEventListener('change', (e) => { handleFoodPhotoFile(e.target.files[0]); e.target.value = ''; });
-  $('foodPhotoGal').addEventListener('change', (e) => { handleFoodPhotoFile(e.target.files[0]); e.target.value = ''; });
+  $('foodPhotoCam').addEventListener('change', (e) => { handleFoodPhotoFiles(e.target.files); e.target.value = ''; });
+  $('foodPhotoGal').addEventListener('change', (e) => { handleFoodPhotoFiles(e.target.files); e.target.value = ''; });
   const analyzeBtn = $('btnAnalyzeFood');
   if (analyzeBtn) analyzeBtn.addEventListener('click', async () => {
-    if (!foodPhotoDataUrl) { toast('အရင်ပုံ ရွေးပေးပါ'); return; }
-    analyzeBtn.disabled = true; analyzeBtn.textContent = 'ဆန်းစစ်နေသည်…';
+    if (!foodPhotoDataUrls.length) { toast('အရင်ပုံ ရွေးပေးပါ'); return; }
+    analyzeBtn.disabled = true;
+    const allItems = [];
+    let failed = 0;
     try {
-      const res = await geminiFoodVision(foodPhotoDataUrl,
-        (n, total, note) => { analyzeBtn.textContent = note === 'wait' ? 'ခဏစောင့်နေသည်…' : ('ပြန်ကြိုးစားနေသည်… (' + n + '/' + total + ')'); });
+      for (let pi = 0; pi < foodPhotoDataUrls.length; pi++) {
+        analyzeBtn.textContent = 'ပုံ ' + (pi + 1) + '/' + foodPhotoDataUrls.length + ' ဆန်းစစ်နေသည်…';
+        try {
+          const res = await geminiFoodVision(foodPhotoDataUrls[pi],
+            (n, total, note) => { analyzeBtn.textContent = note === 'wait' ? 'ခဏစောင့်နေသည်…' : ('ပြန်ကြိုးစားနေသည်… (' + n + '/' + total + ')'); });
+          res.items.forEach(i => allItems.push({ name: i.name, kcal: i.kcal }));
+        } catch (e) { failed++; }
+      }
+      const totalKcal = allItems.reduce((a, i) => a + (+i.kcal || 0), 0);
       const box = $('foodAiResult');
-      if (!res.items.length) { box.innerHTML = '<div class="warn-box">ပုံထဲမှာ အစားအစာ မတွေ့ပါ</div>'; }
+      if (!allItems.length) { box.innerHTML = '<div class="warn-box">ပုံတွေထဲမှာ အစားအစာ မတွေ့ပါ</div>'; }
       else {
-        box.innerHTML = '<div class="ok-box"><b>AI တွေ့ရှိချက် (စုစုပေါင်း ' + res.totalKcal + ' kcal):</b><br>' +
-          res.items.map(i => '• ' + esc(i.name) + ' — ' + i.kcal + ' kcal').join('<br>') + '</div>' +
+        box.innerHTML = '<div class="ok-box"><b>AI တွေ့ရှိချက် (စုစုပေါင်း ' + totalKcal + ' kcal):</b><br>' +
+          allItems.map(i => '• ' + esc(i.name) + ' — ' + i.kcal + ' kcal').join('<br>') +
+          (failed ? '<br><span class="muted">ပုံ ' + failed + ' ပုံ ဆန်းစစ်၍မရပါ</span>' : '') + '</div>' +
           '<button class="btn block mt" id="btnSaveAiFood">ဒီအတိုင်း မှတ်တမ်းတင်မယ်</button>';
         $('btnSaveAiFood').addEventListener('click', () => {
-          res.items.forEach(i => DB.foodLog.push({ id: uid(), profileId: p.id, date: t, time: nowHM(),
+          allItems.forEach(i => DB.foodLog.push({ id: uid(), profileId: p.id, date: t, time: nowHM(),
             name: i.name, kcal: i.kcal, amount: '1 စား', source: 'photo-ai' }));
-          saveDB(); foodPhotoDataUrl = null; renderFood(); toast('မှတ်တမ်းတင်ပြီးပါပြီ ✅');
+          saveDB(); foodPhotoDataUrls = []; renderFood(); toast('မှတ်တမ်းတင်ပြီးပါပြီ ✅');
         });
       }
     } catch (e) {
       $('foodAiResult').innerHTML = '<div class="alert">AI ခေါ်ဆို၍မရပါ: ' + esc(e.message) + '</div>';
     }
-    analyzeBtn.disabled = false; analyzeBtn.textContent = '✨ AI နဲ့ ပုံကို ဆန်းစစ်မယ်';
+    analyzeBtn.disabled = false; updateAnalyzeBtn();
   });
 }
 
