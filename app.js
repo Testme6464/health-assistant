@@ -42,7 +42,7 @@ function fmtTimeMm(hm) { // 24h -> Burmese 12h label
 
 // ---------------- store (localStorage, versioned) ----------------
 const STORE_KEY = 'healthAppV1';
-const APP_VERSION = '2026-11-05m'; // bump on every deploy; shown in Settings
+const APP_VERSION = '2026-11-05n'; // bump on every deploy; shown in Settings
 function defaultDB() {
   const p1 = uid();
   return {
@@ -63,6 +63,7 @@ function defaultDB() {
     symptoms: [],        // {id,profileId,date,time,name,severity,note}
     emergencyContacts: [], // {id,name,phone,relation}
     periodLog: [],       // {id,profileId,start}
+    mealPlans: [],       // {id,profileId,date,time,what} — scheduled meal reminders
     plans: {},           // profileId -> {month,createdAt,ai,meals,sleep,workout,diet,tip,rawAi}
     reminders: { waterEnabled: true, waterInterval: 120, waterStart: '08:00', waterEnd: '21:00',
                  medEnabled: true, sleepEnabled: true, bedtime: '22:30' },
@@ -1289,6 +1290,24 @@ function renderRemind() {
     '<button class="btn secondary" id="btnSaveRemind">💾 သိမ်းမယ်</button></div>' +
     '<div class="small muted mt" id="notifStatus">အခြေအနေ: ' + notifStatusMm() + '</div></div>';
 
+  // MEAL PLANS 2026-11-05: ဘယ်နေ့ ဘယ်အချိန်မှာ ဘာစားမယ် ကြိုမှတ်ထားလို့ရတယ်
+  if (!DB.mealPlans) DB.mealPlans = [];
+  const mealPlans = DB.mealPlans.filter(m => m.profileId === p.id && m.date >= t)
+    .sort((a, b) => (a.date + a.time) < (b.date + b.time) ? -1 : 1);
+  html += '<div class="card"><h3>🍽️ အစားအသောက် ကြိုစီစဉ်မှု</h3>' +
+    '<div class="muted small">ဘယ်နေ့ ဘယ်အချိန်မှာ ဘာစားမယ် ကြိုမှတ်ထားပါ — အချိန်ရောက်ရင် သတိပေးပါမယ်</div>' +
+    '<div class="form-grid"><div><label>နေ့</label><input id="mpDate" type="date" value="' + t + '"></div>' +
+    '<div><label>အချိန်</label><input id="mpTime" type="time" value="12:00"></div></div>' +
+    '<label>ဘာစားမလဲ</label><input id="mpWhat" placeholder="ဥပမာ ကြက်သားဟင်း + ထမင်း">' +
+    '<div class="mt"><button class="btn block" id="btnAddMealPlan">＋ ကြိုမှတ်မယ်</button></div>';
+  if (!mealPlans.length) html += '<div class="muted mt">ကြိုစီစဉ်ထားတာ မရှိသေးပါ</div>';
+  mealPlans.forEach(m => {
+    html += '<div class="list-item"><div class="grow"><b>' + esc(m.what) + '</b>' +
+      '<div class="small muted">' + fmtDateMm(m.date) + ' · ' + fmtTimeMm(m.time) + '</div></div>' +
+      '<button class="btn small-btn danger" data-delmeal="' + m.id + '">ဖျက်မယ်</button></div>';
+  });
+  html += '</div>';
+
   html += '<div class="card"><h3>💧 ရေမှတ်တမ်း (ဒီနေ့ ' + waterToday + ' / ' + waterTarget + ' ml)</h3>' +
     '<div class="progress"><div style="width:' + Math.min(100, Math.round(waterToday / waterTarget * 100)) + '%"></div></div>' +
     '<div class="water-btns"><button class="btn" data-wq="250">+ 250 ml</button><button class="btn" data-wq="500">+ 500 ml</button></div>' +
@@ -1329,6 +1348,19 @@ function renderRemind() {
     r.bedtime = $('rmBedtime').value || '22:30';
     saveDB(); scheduleCheck(); toast('သိမ်းပြီးပါပြီ ✅');
   });
+  $('btnAddMealPlan').addEventListener('click', () => {
+    const what = $('mpWhat').value.trim();
+    if (!what) { toast('ဘာစားမလဲ ထည့်ပေးပါ'); return; }
+    if (!DB.mealPlans) DB.mealPlans = [];
+    DB.mealPlans.push({ id: uid(), profileId: p.id, date: $('mpDate').value || t,
+      time: $('mpTime').value || '12:00', what: what });
+    saveDB(); scheduleCheck(); renderRemind(); toast('ကြိုမှတ်ပြီးပါပြီ ✅');
+  });
+  $('view-remind').querySelectorAll('[data-delmeal]').forEach(b =>
+    b.addEventListener('click', () => {
+      DB.mealPlans = (DB.mealPlans || []).filter(x => x.id !== b.dataset.delmeal);
+      saveDB(); renderRemind();
+    }));
   $('view-remind').querySelectorAll('[data-wq]').forEach(b =>
     b.addEventListener('click', () => { addWater(+b.dataset.wq); renderRemind(); }));
   $('btnWaterCustom').addEventListener('click', () => {
@@ -1417,6 +1449,15 @@ function scheduleCheck() {
       mark(k);
     }
   }
+  // scheduled meal plans (date + time + what)
+  (DB.mealPlans || []).forEach(m => {
+    if (m.date !== t) return;
+    const k = 'meal_' + m.id;
+    if (!fired[k] && Math.abs(mins - hmToMin(m.time)) <= 2) {
+      fireNotif('🍽️ အစားအသောက် အချိန်ရောက်ပါပြီ', m.what + ' စားဖို့ အချိန်ရောက်ပါပြီ');
+      mark(k);
+    }
+  });
   // refill alerts (once per day, in-app)
   const rk = 'refill_' + t;
   if (!fired[rk]) {
